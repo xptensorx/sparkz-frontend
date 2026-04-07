@@ -8,6 +8,7 @@ import AnalysisResults from '../components/analysis/AnalysisResults';
 import { sparkzApi } from '../components/services/sparkzApi';
 
 const STAGE_STEPS = {
+  starting: -1,
   extract: 0,
   redact:  1,
   assess:  2,
@@ -121,11 +122,20 @@ export default function Analysis() {
     return () => es.close();
   }, [runId]);
 
+  const handleAnalysisStarting = () => {
+    setError(null);
+    setProgress({
+      stage: 'starting',
+      detail: 'Uploading your PDF and contacting the analysis server…',
+      pct: 0,
+    });
+  };
+
   const handleRunStarted = (id) => {
     setRunId(id);
     setResult(null);
     setError(null);
-    setProgress({ stage: 'extract', detail: 'Starting...', pct: 0 });
+    setProgress({ stage: 'extract', detail: 'Starting…', pct: 0 });
     // loading stays true — set false when SSE completes or errors
   };
 
@@ -161,8 +171,30 @@ export default function Analysis() {
           <p className="text-gray-400 mt-1">Upload a PDF financial statement and run an AI-powered disclosure checklist analysis.</p>
         </div>
 
-        {/* Progress panel */}
-        {loading && progress && !result && (
+        {/* Progress: “starting” = before run_id (upload + cold backend); avoids blank screen */}
+        {loading && progress?.stage === 'starting' && !result && (
+          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-start gap-4">
+              <svg className="w-8 h-8 text-[#1313ec] flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <div>
+                <p className="font-bold text-[#1e1b4b] text-sm">Starting analysis</p>
+                <p className="text-sm text-gray-600 mt-1">{progress.detail}</p>
+                <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                  If the backend is on <strong className="font-semibold text-gray-500">free</strong> cloud hosting, it may
+                  need <strong className="font-semibold text-gray-500">30–60 seconds</strong> to wake after idle. This page
+                  will update as soon as the server responds — nothing is wrong.
+                </p>
+                <p className="text-xs text-gray-400 mt-2 tabular-nums">Elapsed {formatElapsed(elapsedTime)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Progress panel (pipeline stages) */}
+        {loading && progress && progress.stage !== 'starting' && !result && (
           <div className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="font-bold text-[#1e1b4b] text-sm">Analysis in progress</p>
@@ -224,6 +256,7 @@ export default function Analysis() {
         {/* Form */}
         {!loading && !result && (
           <AnalysisForm
+            onAnalysisStarting={handleAnalysisStarting}
             onRunStarted={handleRunStarted}
             onError={setError}
             loading={loading}

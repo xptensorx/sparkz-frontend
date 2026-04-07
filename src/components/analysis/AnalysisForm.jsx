@@ -6,7 +6,7 @@ const STANDARDS = [
   { value: 'frs102', label: 'FRS 102 Section 1A — Small company accounts' },
 ];
 
-export default function AnalysisForm({ onRunStarted, onError, loading, setLoading }) {
+export default function AnalysisForm({ onAnalysisStarting, onRunStarted, onError, loading, setLoading }) {
   const [standard, setStandard] = useState('frs105');
   const [file, setFile] = useState(null);
   const fileRef = useRef(null);
@@ -16,6 +16,7 @@ export default function AnalysisForm({ onRunStarted, onError, loading, setLoadin
     if (!file || !standard) return;
     setLoading(true);
     onError(null);
+    onAnalysisStarting?.();
 
     const fd = new FormData();
     fd.append('file', file);
@@ -41,7 +42,10 @@ export default function AnalysisForm({ onRunStarted, onError, loading, setLoadin
     <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
       <div>
         <h2 className="text-xl font-black text-[#1e1b4b] mb-1">Run Document Analysis</h2>
-        <p className="text-sm text-gray-400">Upload a financial statement PDF and select the accounting standard. Analysis takes 2–5 minutes.</p>
+        <p className="text-sm text-gray-400">
+          Upload a financial statement PDF and select the accounting standard. Analysis usually takes 2–5 minutes after the
+          run starts. The first request after idle can take longer if the API is on free hosting (cold start).
+        </p>
       </div>
 
       {/* Standard selection */}
