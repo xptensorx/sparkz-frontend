@@ -1,4 +1,4 @@
-import { createPageUrl } from '@/utils';
+import { useNavigate } from 'react-router-dom';
 import SparkzLogo from '../components/SparkzLogo';
 
 const plans = [
@@ -16,53 +16,78 @@ const features = [
 ];
 
 export default function Landing() {
+  const navigate = useNavigate();
   const goToAuth = (mode = 'signup') => {
     const tab = typeof mode === 'string' && (mode === 'signup' || mode === 'signin') ? mode : 'signup';
-    window.location.href = createPageUrl(`Auth?tab=${encodeURIComponent(tab)}`);
+    navigate(`/login?tab=${encodeURIComponent(tab)}`);
   };
 
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
-      <nav className="border-b border-white/10 sticky top-0 bg-[#1e1b4b]/95 backdrop-blur z-30">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <nav className="sticky top-0 z-30 border-b border-white/10 bg-[#1e1b4b]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-6 md:min-h-[3.5rem] md:py-0">
           <SparkzLogo variant="light" />
-          <div className="hidden md:flex items-center gap-6 text-sm text-purple-200">
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+          <div className="order-3 flex w-full items-center justify-center gap-5 border-t border-white/10 pt-3 text-xs text-purple-200 sm:order-none sm:w-auto sm:border-0 sm:pt-0 md:gap-6 md:text-sm">
+            <a href="#features" className="transition-colors hover:text-white">
+              Features
+            </a>
+            <a href="#pricing" className="transition-colors hover:text-white">
+              Pricing
+            </a>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => goToAuth('signin')} className="text-sm font-medium text-purple-200 hover:text-white transition-colors">Login</button>
-            <button type="button" onClick={() => goToAuth('signup')} className="px-4 py-2 bg-[#e6c33a] text-[#1e1b4b] text-sm font-bold rounded-lg hover:bg-[#d4b034] transition-colors">Get Started</button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => goToAuth('signin')}
+              className="text-xs font-medium text-purple-200 transition-colors hover:text-white sm:text-sm"
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => goToAuth('signup')}
+              className="rounded-lg bg-[#e6c33a] px-3 py-1.5 text-xs font-bold text-[#1e1b4b] transition-colors hover:bg-[#d4b034] sm:px-4 sm:py-2 sm:text-sm"
+            >
+              Get Started
+            </button>
           </div>
         </div>
       </nav>
 
       {/* Hero - dark purple like reference site */}
-      <section className="bg-[#1e1b4b] py-24 px-6">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+      <section className="bg-[#1e1b4b] px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2 md:gap-12">
           <div>
-            <div className="inline-flex items-center gap-2 bg-white/10 text-purple-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-              <span className="w-1.5 h-1.5 bg-[#e6c33a] rounded-full animate-pulse" />
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-purple-200 sm:mb-6">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#e6c33a]" />
               AI-Powered Compliance
             </div>
-            <h1 className="text-5xl font-black text-white leading-tight mb-6">
+            <h1 className="mb-5 text-3xl font-black leading-[1.15] text-white sm:mb-6 sm:text-4xl md:text-5xl">
               Automate your<br />
-              <span className="text-[#e6c33a]">disclosure</span><br />
+              <span className="text-[#e6c33a]">disclosure</span>
+              <br />
               checklists with AI.
             </h1>
-            <p className="text-purple-200 text-lg mb-8 leading-relaxed">
+            <p className="mb-6 text-base leading-relaxed text-purple-200 sm:mb-8 sm:text-lg">
               Upload financial statements, select your framework, and get instant compliance insights. Save hours of manual review.
             </p>
-            <div className="flex items-center gap-4 flex-wrap">
-              <button type="button" onClick={() => goToAuth('signup')} className="flex items-center gap-2 px-6 py-3 bg-[#e6c33a] text-[#1e1b4b] font-bold rounded-xl hover:bg-[#d4b034] transition-colors">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+              <button
+                type="button"
+                onClick={() => goToAuth('signup')}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#e6c33a] px-5 py-3 font-bold text-[#1e1b4b] transition-colors hover:bg-[#d4b034] sm:px-6"
+              >
                 Start your free analysis →
               </button>
-              <button className="px-6 py-3 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">
+              <button
+                type="button"
+                className="rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition-colors hover:bg-white/10 sm:px-6"
+              >
                 Book a demo
               </button>
             </div>
-            <p className="mt-6 text-xs text-purple-300">Trusted by 500+ accounting firms</p>
+            <p className="mt-5 text-xs text-purple-300 sm:mt-6">Trusted by 500+ accounting firms</p>
           </div>
           <div className="hidden md:block">
             <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
@@ -94,13 +119,15 @@ export default function Landing() {
       </section>
 
       {/* Features */}
-      <section id="features" className="bg-[#f8f8fb] py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-black text-[#1e1b4b] mb-3">Streamline Your Compliance Workflow</h2>
-            <p className="text-gray-500">Everything you need to manage financial reporting disclosures in one secure, AI-powered platform.</p>
+      <section id="features" className="bg-[#f8f8fb] py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-10 text-center sm:mb-14">
+            <h2 className="mb-3 text-2xl font-black text-[#1e1b4b] sm:text-3xl">Streamline Your Compliance Workflow</h2>
+            <p className="mx-auto max-w-2xl text-sm text-gray-500 sm:text-base">
+              Everything you need to manage financial reporting disclosures in one secure, AI-powered platform.
+            </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
             {features.map(f => (
               <div key={f.title} className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 hover:shadow-md transition-shadow hover:border-[#e6c33a]/40">
                 <div className="w-12 h-12 bg-[#1e1b4b] rounded-xl flex items-center justify-center mb-4 text-2xl">
@@ -115,15 +142,22 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-black text-[#1e1b4b] mb-3">Simple, scalable pricing</h2>
-            <p className="text-gray-500">Choose the plan that fits your firm's volume. No hidden setup fees.</p>
+      <section id="pricing" className="bg-white py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-10 text-center sm:mb-14">
+            <h2 className="mb-3 text-2xl font-black text-[#1e1b4b] sm:text-3xl">Simple, scalable pricing</h2>
+            <p className="text-sm text-gray-500 sm:text-base">Choose the plan that fits your firm&apos;s volume. No hidden setup fees.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {plans.map(plan => (
-              <div key={plan.name} className={`rounded-2xl p-6 border-2 flex flex-col transition-all ${plan.highlight ? 'border-[#e6c33a] bg-[#1e1b4b] text-white shadow-xl scale-105' : 'border-gray-200 bg-white hover:border-[#1e1b4b]/30'}`}>
+              <div
+                key={plan.name}
+                className={`flex flex-col rounded-2xl border-2 p-5 transition-all sm:p-6 ${
+                  plan.highlight
+                    ? 'border-[#e6c33a] bg-[#1e1b4b] text-white shadow-xl md:scale-[1.02]'
+                    : 'border-gray-200 bg-white hover:border-[#1e1b4b]/30'
+                }`}
+              >
                 <div className={`text-xs font-semibold uppercase tracking-wider mb-1 ${plan.highlight ? 'text-[#e6c33a]' : 'text-gray-400'}`}>{plan.name}</div>
                 <div className={`text-2xl font-black mb-1 ${plan.highlight ? 'text-white' : 'text-[#1e1b4b]'}`}>{plan.price}</div>
                 <div className={`text-xs mb-4 ${plan.highlight ? 'text-purple-300' : 'text-gray-400'}`}>/mo</div>
@@ -142,21 +176,34 @@ export default function Landing() {
       </section>
 
       {/* CTA Banner */}
-      <section className="bg-[#1e1b4b] py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-black text-white mb-3">Ready to automate your disclosures?</h2>
-          <p className="text-purple-200 mb-8">Join hundreds of accounting firms saving hours on compliance every week.</p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <button type="button" onClick={() => goToAuth('signup')} className="px-6 py-3 bg-[#e6c33a] text-[#1e1b4b] font-bold rounded-xl hover:bg-[#d4b034] transition-colors">Start your free analysis</button>
-            <button className="px-6 py-3 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">Schedule a demo</button>
+      <section className="bg-[#1e1b4b] py-12 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <h2 className="mb-3 text-2xl font-black text-white sm:text-3xl">Ready to automate your disclosures?</h2>
+          <p className="mb-6 text-sm text-purple-200 sm:mb-8 sm:text-base">
+            Join hundreds of accounting firms saving hours on compliance every week.
+          </p>
+          <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <button
+              type="button"
+              onClick={() => goToAuth('signup')}
+              className="rounded-xl bg-[#e6c33a] px-6 py-3 font-bold text-[#1e1b4b] transition-colors hover:bg-[#d4b034]"
+            >
+              Start your free analysis
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-white/30 px-6 py-3 font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              Schedule a demo
+            </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#17153d] py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+      <footer className="bg-[#17153d] py-10 sm:py-12">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-8 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
             <div>
               <SparkzLogo variant="light" size="sm" />
               <p className="mt-3 text-sm text-purple-300 leading-relaxed">The AI platform for modern financial compliance.</p>
@@ -176,8 +223,8 @@ export default function Landing() {
               </div>
             ))}
           </div>
-          <div className="border-t border-white/10 pt-6 flex items-center justify-between">
-            <p className="text-purple-300 text-xs">© 2026 Sparkz AI Technologies Inc. All rights reserved.</p>
+          <div className="flex flex-col gap-2 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-purple-300">© 2026 Sparkz AI Technologies Inc. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import SparkzLogo from '../components/SparkzLogo';
+import { useNavigate, useParams } from 'react-router-dom';
 import ApiHealthBanner from '../components/ApiHealthBanner';
 import AnalysisForm from '../components/analysis/AnalysisForm';
 import AnalysisSummary from '../components/analysis/AnalysisSummary';
 import AnalysisResults from '../components/analysis/AnalysisResults';
+import SidebarLayout from '../components/SidebarLayout';
 import { sparkzApi } from '../components/services/sparkzApi';
 
 const STAGE_STEPS = {
   starting: -1,
   extract: 0,
-  redact:  1,
-  assess:  2,
-  review:  3,
+  redact: 1,
+  assess: 2,
+  review: 3,
   complete: 4,
 };
 
@@ -30,16 +31,17 @@ function formatElapsed(seconds) {
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
-// Parse "Assessed 12/45 items" or "Reviewed 3/45 items" → { done, total }
 function parseItemProgress(detail) {
   const m = detail?.match(/(?:Assessed|Reviewed)\s+(\d+)\/(\d+)\s+items/i);
   return m ? { done: parseInt(m[1], 10), total: parseInt(m[2], 10) } : null;
 }
 
 export default function Analysis() {
+  const { runId: paramRunId } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [runId, setRunId] = useState(null);
-  const [progress, setProgress] = useState(null);  // { stage, detail, pct }
+  const [progress, setProgress] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -53,7 +55,43 @@ export default function Analysis() {
     sparkzApi.health().catch(() => {});
   }, []);
 
-  // Elapsed time + stall detection ticker
+  useEffect(() => {
+    if (!paramRunId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await sparkzApi.getResults(paramRunId);
+        if (cancelled) return;
+        if (data.status === 'complete') {
+          setResult(data);
+          setLoading(false);
+          setRunId(null);
+          setError(null);
+        } else if (data.status === 'error') {
+          setError(data.error_message || 'Analysis failed.');
+          setLoading(false);
+          setRunId(null);
+        } else {
+          setRunId(paramRunId);
+          setLoading(true);
+          setResult(null);
+          setError(null);
+          setProgress({
+            stage: 'extract',
+            detail: 'Analysis in progress…',
+            pct: 0,
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Could not load analysis');
+          setLoading(false);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [paramRunId]);
+
   useEffect(() => {
     if (!loading) {
       setElapsedTime(0);
@@ -70,13 +108,11 @@ export default function Analysis() {
       setStalledFor(stalled);
       if (stalled >= STALL_THRESHOLD_S && !stallWarnedRef.current) {
         stallWarnedRef.current = true;
-        // progress ref not stable here — warning appears via stalledFor state
       }
     }, 1000);
     return () => clearInterval(id);
   }, [loading]);
 
-  // Start SSE stream when we have a run_id
   useEffect(() => {
     if (!runId) return;
 
@@ -86,7 +122,6 @@ export default function Analysis() {
 
     es.onmessage = async (e) => {
       const data = JSON.parse(e.data);
-      console.log('[SSE]', new Date().toISOString(), data);
       lastProgressAt.current = Date.now();
       setStalledFor(0);
       stallWarnedRef.current = false;
@@ -98,7 +133,7 @@ export default function Analysis() {
         try {
           const fullResult = await sparkzApi.getResults(runId);
           setResult(fullResult);
-        } catch (err) {
+        } catch {
           setError('Analysis finished but failed to load results. Please refresh.');
         } finally {
           setLoading(false);
@@ -110,9 +145,8 @@ export default function Analysis() {
       }
     };
 
-    es.onerror = (e) => {
+    es.onerror = () => {
       const lastStage = progressRef.current?.stage;
-      console.warn('[SSE error]', new Date().toISOString(), { stage: lastStage, pct: progressRef.current?.pct });
       es.close();
       const aiStages = ['assess', 'review'];
       const msg = aiStages.includes(lastStage)
@@ -139,7 +173,7 @@ export default function Analysis() {
     setResult(null);
     setError(null);
     setProgress({ stage: 'extract', detail: 'Starting…', pct: 0 });
-    // loading stays true — set false when SSE completes or errors
+    navigate(`/analysis/${id}`, { replace: true });
   };
 
   const handleReset = () => {
@@ -149,74 +183,83 @@ export default function Analysis() {
     setError(null);
     setProgress(null);
     setLoading(false);
+    navigate('/analysis', { replace: true });
   };
 
   const currentStepIndex = progress ? (STAGE_STEPS[progress.stage] ?? 0) : -1;
 
   return (
-    <div className="min-h-screen bg-[#f8f8fb]">
-      <ApiHealthBanner />
-      <header className="bg-[#1e1b4b] border-b border-white/10 sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <SparkzLogo size="sm" variant="light" />
-          <span className="text-xs text-purple-300 font-medium hidden sm:inline">Disclosure checklist analysis</span>
-        </div>
-      </header>
+    <SidebarLayout activePage="Analysis">
+      <div className="mx-auto max-w-4xl space-y-6 sm:space-y-8">
+        <ApiHealthBanner />
 
-      <div className="max-w-5xl mx-auto px-6 pt-8 pb-16">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-[#1e1b4b]">Document Analysis</h1>
-          <p className="text-gray-400 mt-1">Upload a PDF financial statement and run an AI-powered disclosure checklist analysis.</p>
-        </div>
+        {!result && !loading && (
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#16133a] via-[#1e1b4b] to-[#312e81] px-5 py-8 text-white shadow-xl shadow-indigo-950/30 ring-1 ring-white/10 sm:rounded-3xl sm:px-8 sm:py-10">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#e6c33a]/15 blur-3xl" />
+            <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-indigo-400/20 blur-3xl" />
+            <div className="relative">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-200/90">Checklist engine</p>
+              <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                Run a disclosure analysis
+              </h2>
+              <p className="mt-3 text-sm sm:text-base text-violet-100/85 max-w-xl leading-relaxed">
+                Upload your statutory accounts as a PDF, pick FRS 102 or FRS 105, and let the pipeline extract text,
+                redact sensitive fields, and assess every checklist row.
+              </p>
+            </div>
+          </div>
+        )}
 
-        {/* Progress: “starting” = before run_id (upload + cold backend); avoids blank screen */}
         {loading && progress?.stage === 'starting' && !result && (
-          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-start gap-4">
-              <svg className="w-8 h-8 text-[#1313ec] flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              <div>
-                <p className="font-bold text-[#1e1b4b] text-sm">Starting analysis</p>
-                <p className="text-sm text-gray-600 mt-1">{progress.detail}</p>
-                <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                  If the backend is on <strong className="font-semibold text-gray-500">free</strong> cloud hosting, it may
-                  need <strong className="font-semibold text-gray-500">30–60 seconds</strong> to wake after idle. This page
-                  will update as soon as the server responds — nothing is wrong.
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg shadow-gray-200/50 ring-1 ring-black/[0.04] sm:rounded-3xl sm:p-8">
+            <div className="flex items-start gap-5">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-indigo-50">
+                <svg className="h-6 w-6 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#16133a]">Starting analysis</p>
+                <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">{progress.detail}</p>
+                <p className="text-xs text-gray-400 mt-4 leading-relaxed">
+                  On free cloud tiers the API can take <strong className="text-gray-600">30–60 seconds</strong> to wake
+                  after idle. This page updates as soon as the server responds.
                 </p>
-                <p className="text-xs text-gray-400 mt-2 tabular-nums">Elapsed {formatElapsed(elapsedTime)}</p>
+                <p className="text-xs text-gray-500 mt-3 tabular-nums font-medium">Elapsed {formatElapsed(elapsedTime)}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Progress panel (pipeline stages) */}
         {loading && progress && progress.stage !== 'starting' && !result && (
-          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-bold text-[#1e1b4b] text-sm">Analysis in progress</p>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 tabular-nums">{formatElapsed(elapsedTime)}</span>
-                <span className="text-lg font-black text-[#1313ec]">{progress.pct}%</span>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg shadow-gray-200/50 ring-1 ring-black/[0.04] sm:rounded-3xl sm:p-8">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Pipeline</p>
+                <p className="font-bold text-[#16133a] text-lg mt-0.5">Analysis in progress</p>
+              </div>
+              <div className="flex flex-row items-center justify-between gap-3 sm:block sm:text-right">
+                <span className="text-xs tabular-nums text-gray-400 sm:block">{formatElapsed(elapsedTime)}</span>
+                <span className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                  {progress.pct}%
+                </span>
               </div>
             </div>
-            <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+            <div className="h-3 rounded-full bg-gray-100 overflow-hidden mb-4 ring-1 ring-black/[0.04]">
               <div
-                className="h-full bg-[#1313ec] rounded-full transition-all duration-500"
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-amber-400 transition-all duration-500 ease-out"
                 style={{ width: `${progress.pct}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 mb-4">{progress.detail}</p>
+            <p className="text-sm text-gray-600 mb-6">{progress.detail}</p>
 
-            {/* Stall warning */}
             {stalledFor >= STALL_THRESHOLD_S && (
-              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
-                {progress.stage === 'assess'
-                  ? 'AI Assessment can take 1–2 minutes for large checklists. The LLM is still processing — please wait.'
-                  : progress.stage === 'review'
-                  ? 'AI Review can take a moment for large checklists. Still running — please wait.'
-                  : 'The server hasn\'t responded in a while — this is normal for large documents. Still running.'}
+              <div className="mb-6 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-900">
+                {progress.stage === 'assess' && 'AI assessment can take 1–2 minutes on large checklists — still running.'}
+                {progress.stage === 'review' && 'AI review is working through items — please wait.'}
+                {!['assess', 'review'].includes(progress.stage) &&
+                  'No update for a while — large documents can take several minutes. Still processing.'}
               </div>
             )}
 
@@ -225,14 +268,37 @@ export default function Analysis() {
                 const status = i < currentStepIndex ? 'done' : i === currentStepIndex ? 'active' : 'waiting';
                 const itemProgress = status === 'active' ? parseItemProgress(progress.detail) : null;
                 return (
-                  <div key={label} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${status === 'done' ? 'bg-green-50 text-green-700' : status === 'active' ? 'bg-blue-50 text-[#1313ec]' : 'bg-gray-50 text-gray-400'}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${status === 'done' ? 'bg-green-500' : status === 'active' ? 'bg-[#1313ec] animate-pulse' : 'bg-gray-200'}`}>
-                      {status === 'done' && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><polyline points="20 6 9 17 4 12" /></svg>}
+                  <div
+                    key={label}
+                    className={`flex items-center gap-4 px-4 py-3 rounded-2xl text-sm transition-colors ${
+                      status === 'done'
+                        ? 'bg-emerald-50/90 text-emerald-800 border border-emerald-100'
+                        : status === 'active'
+                          ? 'bg-indigo-50 border border-indigo-100 text-indigo-900 shadow-sm'
+                          : 'bg-gray-50/80 text-gray-400 border border-transparent'
+                    }`}
+                  >
+                    <div
+                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
+                        status === 'done'
+                          ? 'bg-emerald-500 text-white'
+                          : status === 'active'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 animate-pulse'
+                            : 'bg-gray-200 text-gray-500'
+                      }`}
+                    >
+                      {status === 'done' ? (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        i + 1
+                      )}
                     </div>
-                    <span className="font-semibold">{label}</span>
+                    <span className="font-semibold flex-1">{label}</span>
                     {itemProgress && (
-                      <span className="ml-auto text-xs font-mono bg-blue-100 text-[#1313ec] px-2 py-0.5 rounded-full">
-                        {itemProgress.done}/{itemProgress.total} items
+                      <span className="text-xs font-mono font-bold bg-white/80 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-100">
+                        {itemProgress.done}/{itemProgress.total}
                       </span>
                     )}
                   </div>
@@ -242,16 +308,20 @@ export default function Analysis() {
           </div>
         )}
 
-        {/* Error */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-5">
-            <p className="font-semibold text-red-700 text-sm mb-0.5">Analysis failed</p>
-            <p className="text-red-500 text-sm">{error}</p>
-            <button onClick={handleReset} className="mt-3 text-sm text-red-600 underline">Try again</button>
+          <div className="rounded-3xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-6 shadow-md ring-1 ring-red-100/80">
+            <p className="font-bold text-red-800">We couldn&apos;t complete this analysis</p>
+            <p className="text-red-700/90 text-sm mt-2 leading-relaxed">{error}</p>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b] transition-colors"
+            >
+              Try another file
+            </button>
           </div>
         )}
 
-        {/* Form */}
         {!loading && !result && (
           <AnalysisForm
             onAnalysisStarting={handleAnalysisStarting}
@@ -262,26 +332,27 @@ export default function Analysis() {
           />
         )}
 
-        {/* Results */}
         {result && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#1e1b4b]">Results</h2>
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Results</p>
+                <h2 className="text-2xl font-black text-[#16133a] mt-1">Disclosure checklist</h2>
+                <p className="text-sm text-gray-500 mt-1">{result.filename}</p>
+              </div>
               <button
+                type="button"
                 onClick={handleReset}
-                className="text-sm text-gray-400 hover:text-gray-600 font-medium transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border-2 border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-[#16133a] hover:border-[#e6c33a] hover:bg-amber-50/50 transition-colors"
               >
-                ← Run another analysis
+                New analysis
               </button>
             </div>
             <AnalysisSummary result={result} />
-            <AnalysisResults
-              results={result.items || []}
-              runId={result.run_id}
-            />
+            <AnalysisResults results={result.items || []} runId={result.run_id} />
           </div>
         )}
       </div>
-    </div>
+    </SidebarLayout>
   );
 }

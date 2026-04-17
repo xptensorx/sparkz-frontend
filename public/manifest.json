@@ -1,0 +1,9 @@
+{
+  "name": "SPARKZ FINANCIALS",
+  "short_name": "Sparkz",
+  "description": "AI disclosure checklist analysis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f8fb",
+  "theme_color": "#1e1b4b"
+}
