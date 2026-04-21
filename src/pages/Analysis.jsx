@@ -7,18 +7,26 @@ import AnalysisResults from '../components/analysis/AnalysisResults';
 import SidebarLayout from '../components/SidebarLayout';
 import { sparkzApi } from '../components/services/sparkzApi';
 
+/**
+ * @typedef {{ stage: string, detail: string, pct: number }} ProgressState
+ * @typedef {{ run_id: string, filename: string, items?: any[], status?: string }} AnalysisResult
+ */
+
+/** @type {Record<string, number>} */
 const STAGE_STEPS = {
   starting: -1,
   extract: 0,
   redact: 1,
-  assess: 2,
-  review: 3,
-  complete: 4,
+  normalize: 2,
+  assess: 3,
+  review: 4,
+  complete: 5,
 };
 
 const STEP_LABELS = [
   'Parsing PDF',
   'Removing PII',
+  'Normalizing text',
   'AI Assessment',
   'AI Review',
   'Complete',
@@ -26,11 +34,17 @@ const STEP_LABELS = [
 
 const STALL_THRESHOLD_S = 45;
 
+/**
+ * @param {number} seconds
+ */
 function formatElapsed(seconds) {
   if (seconds < 60) return `${seconds}s`;
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
+/**
+ * @param {string | undefined} detail
+ */
 function parseItemProgress(detail) {
   const m = detail?.match(/(?:Assessed|Reviewed)\s+(\d+)\/(\d+)\s+items/i);
   return m ? { done: parseInt(m[1], 10), total: parseInt(m[2], 10) } : null;
@@ -40,15 +54,30 @@ export default function Analysis() {
   const { runId: paramRunId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [runId, setRunId] = useState(null);
-  const [progress, setProgress] = useState(null);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
+  const [runId, setRunId] =
+    /** @type {[string | null, import('react').Dispatch<import('react').SetStateAction<string | null>>]} */ (
+      useState(null)
+    );
+  const [progress, setProgress] =
+    /** @type {[ProgressState | null, import('react').Dispatch<import('react').SetStateAction<ProgressState | null>>]} */ (
+      useState(null)
+    );
+  const [result, setResult] =
+    /** @type {[AnalysisResult | null, import('react').Dispatch<import('react').SetStateAction<AnalysisResult | null>>]} */ (
+      useState(null)
+    );
+  const [error, setError] =
+    /** @type {[string | null, import('react').Dispatch<import('react').SetStateAction<string | null>>]} */ (
+      useState(null)
+    );
   const [elapsedTime, setElapsedTime] = useState(0);
   const [stalledFor, setStalledFor] = useState(0);
+  /** @type {import('react').MutableRefObject<EventSource | null>} */
   const esRef = useRef(null);
+  /** @type {import('react').MutableRefObject<number | null>} */
   const lastProgressAt = useRef(null);
   const stallWarnedRef = useRef(false);
+  /** @type {import('react').MutableRefObject<ProgressState | null>} */
   const progressRef = useRef(null);
 
   useEffect(() => {
@@ -84,7 +113,7 @@ export default function Analysis() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || 'Could not load analysis');
+          setError(err instanceof Error ? err.message : 'Could not load analysis');
           setLoading(false);
         }
       }
@@ -146,7 +175,7 @@ export default function Analysis() {
     };
 
     es.onerror = () => {
-      const lastStage = progressRef.current?.stage;
+      const lastStage = progressRef.current?.stage || '';
       es.close();
       const aiStages = ['assess', 'review'];
       const msg = aiStages.includes(lastStage)
@@ -168,6 +197,9 @@ export default function Analysis() {
     });
   };
 
+  /**
+   * @param {string} id
+   */
   const handleRunStarted = (id) => {
     setRunId(id);
     setResult(null);
