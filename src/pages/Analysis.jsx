@@ -6,18 +6,21 @@ import AnalysisSummary from '../components/analysis/AnalysisSummary';
 import AnalysisResults from '../components/analysis/AnalysisResults';
 import SidebarLayout from '../components/SidebarLayout';
 import { sparkzApi } from '../components/services/sparkzApi';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * @typedef {{ stage: string, detail: string, pct: number }} ProgressState
- * @typedef {{ run_id: string, filename: string, items?: any[], status?: string }} AnalysisResult
+ * @typedef {{ run_id: string, filename: string, items?: any[], status?: string, error_message?: string, live_progress?: ProgressState }} AnalysisResult
  */
 
 /** @type {Record<string, number>} */
 const STAGE_STEPS = {
   starting: -1,
+  pending: -0.5,
   extract: 0,
   redact: 1,
   normalize: 2,
+  scope: 2.5,
   assess: 3,
   review: 4,
   complete: 5,
@@ -50,9 +53,37 @@ function parseItemProgress(detail) {
   return m ? { done: parseInt(m[1], 10), total: parseInt(m[2], 10) } : null;
 }
 
+/**
+ * Single-writer rule for pipeline %: never accept a *lower* pct than we already show (stale HTTP
+ * responses, overlapping polls, or old EventSource chunks). Stops 25% ↔ 0% stress.
+ *
+ * @param {import('react').Dispatch<import('react').SetStateAction<ProgressState | null>>} setProgress
+ * @param {import('react').MutableRefObject<ProgressState | null>} progressRef
+ * @param {ProgressState} next
+ */
+function applyMonotonicPipelineProgress(setProgress, progressRef, next) {
+  if (!next || typeof next.pct !== 'number' || !next.stage) return;
+  setProgress((prev) => {
+    if (next.stage === 'error' || next.stage === 'complete') {
+      progressRef.current = next;
+      return next;
+    }
+    if (!prev) {
+      progressRef.current = next;
+      return next;
+    }
+    if (next.pct < prev.pct) {
+      return prev;
+    }
+    progressRef.current = next;
+    return next;
+  });
+}
+
 export default function Analysis() {
   const { runId: paramRunId } = useParams();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [runId, setRunId] =
     /** @type {[string | null, import('react').Dispatch<import('react').SetStateAction<string | null>>]} */ (
@@ -72,13 +103,16 @@ export default function Analysis() {
     );
   const [elapsedTime, setElapsedTime] = useState(0);
   const [stalledFor, setStalledFor] = useState(0);
-  /** @type {import('react').MutableRefObject<EventSource | null>} */
-  const esRef = useRef(null);
   /** @type {import('react').MutableRefObject<number | null>} */
   const lastProgressAt = useRef(null);
   const stallWarnedRef = useRef(false);
   /** @type {import('react').MutableRefObject<ProgressState | null>} */
   const progressRef = useRef(null);
+  const runFinishedRef = useRef(false);
+
+  useEffect(() => {
+    runFinishedRef.current = false;
+  }, [runId]);
 
   useEffect(() => {
     sparkzApi.health().catch(() => {});
@@ -105,21 +139,26 @@ export default function Analysis() {
           setLoading(true);
           setResult(null);
           setError(null);
-          setProgress({
-            stage: 'extract',
-            detail: 'Analysis in progress…',
-            pct: 0,
-          });
+          // Progress comes only from GET /api/results polling (live_progress). Never setProgress here.
         }
       } catch (err) {
         if (!cancelled) {
+          if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+            runFinishedRef.current = true;
+            logout();
+            setLoading(false);
+            setRunId(null);
+            setProgress(null);
+            navigate('/login', { replace: true });
+            return;
+          }
           setError(err instanceof Error ? err.message : 'Could not load analysis');
           setLoading(false);
         }
       }
     })();
     return () => { cancelled = true; };
-  }, [paramRunId]);
+  }, [paramRunId, logout, navigate]);
 
   useEffect(() => {
     if (!loading) {
@@ -142,59 +181,72 @@ export default function Analysis() {
     return () => clearInterval(id);
   }, [loading]);
 
+  /** Poll processing runs via GET /api/results (live_progress). Single source of truth — no EventSource. */
   useEffect(() => {
-    if (!runId) return;
+    if (!runId || !loading || result) return undefined;
+    const rid = runId;
+    let cancelled = false;
 
-    const url = sparkzApi.progressUrl(runId);
-    const es = new EventSource(url);
-    esRef.current = es;
+    async function tick() {
+      try {
+        if (cancelled || runFinishedRef.current) return;
+        const data = await sparkzApi.getResults(rid);
+        if (cancelled || runFinishedRef.current) return;
 
-    es.onmessage = async (e) => {
-      const data = JSON.parse(e.data);
-      lastProgressAt.current = Date.now();
-      setStalledFor(0);
-      stallWarnedRef.current = false;
-      progressRef.current = data;
-      setProgress(data);
-
-      if (data.stage === 'complete') {
-        es.close();
-        try {
-          const fullResult = await sparkzApi.getResults(runId);
-          setResult(fullResult);
-        } catch {
-          setError('Analysis finished but failed to load results. Please refresh.');
-        } finally {
+        if (data.status === 'complete') {
+          runFinishedRef.current = true;
+          setResult(data);
           setLoading(false);
+          return;
         }
-      } else if (data.stage === 'error') {
-        es.close();
-        setError(data.detail || 'Analysis failed.');
-        setLoading(false);
+        if (data.status === 'error') {
+          runFinishedRef.current = true;
+          setError(data.error_message || 'Analysis failed.');
+          setLoading(false);
+          return;
+        }
+
+        lastProgressAt.current = Date.now();
+        const lp = data.live_progress;
+        if (lp && typeof lp.pct === 'number' && lp.stage) {
+          setStalledFor(0);
+          stallWarnedRef.current = false;
+          applyMonotonicPipelineProgress(setProgress, progressRef, {
+            stage: lp.stage,
+            detail: lp.detail ?? '',
+            pct: lp.pct,
+          });
+        }
+      } catch (err) {
+        if (cancelled || runFinishedRef.current) return;
+        if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+          runFinishedRef.current = true;
+          logout();
+          setLoading(false);
+          setRunId(null);
+          setProgress(null);
+          navigate('/login', { replace: true });
+        }
       }
-    };
+    }
 
-    es.onerror = () => {
-      const lastStage = progressRef.current?.stage || '';
-      es.close();
-      const aiStages = ['assess', 'review'];
-      const msg = aiStages.includes(lastStage)
-        ? 'Lost connection during AI processing — the run may still finish on the server. Wait a minute and try again, or re-upload the PDF.'
-        : 'Lost connection to the analysis server. Please try again.';
-      setError(msg);
-      setLoading(false);
+    tick();
+    const intervalId = setInterval(tick, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
     };
-
-    return () => es.close();
-  }, [runId]);
+  }, [runId, loading, result, logout, navigate]);
 
   const handleAnalysisStarting = () => {
     setError(null);
-    setProgress({
+    const p = {
       stage: 'starting',
       detail: 'Uploading your PDF and contacting the analysis server…',
       pct: 0,
-    });
+    };
+    progressRef.current = p;
+    setProgress(p);
   };
 
   /**
@@ -204,12 +256,13 @@ export default function Analysis() {
     setRunId(id);
     setResult(null);
     setError(null);
-    setProgress({ stage: 'extract', detail: 'Starting…', pct: 0 });
+    const p = { stage: 'extract', detail: 'Starting…', pct: 0 };
+    progressRef.current = p;
+    setProgress(p);
     navigate(`/analysis/${id}`, { replace: true });
   };
 
   const handleReset = () => {
-    esRef.current?.close();
     setRunId(null);
     setResult(null);
     setError(null);
@@ -238,6 +291,26 @@ export default function Analysis() {
                 Upload your statutory accounts as a PDF, pick FRS 102 or FRS 105, and let the pipeline extract text,
                 redact sensitive fields, and assess every checklist row.
               </p>
+            </div>
+          </div>
+        )}
+
+        {loading && runId && progress === null && !result && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg shadow-gray-200/50 ring-1 ring-black/[0.04] sm:rounded-3xl sm:p-8">
+            <div className="flex items-start gap-5">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-indigo-50">
+                <svg className="h-6 w-6 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#16133a]">Loading analysis</p>
+                <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">
+                  Fetching run status from the server… Progress will appear within a few seconds.
+                </p>
+                <p className="text-xs text-gray-500 mt-3 tabular-nums font-medium">Elapsed {formatElapsed(elapsedTime)}</p>
+              </div>
             </div>
           </div>
         )}

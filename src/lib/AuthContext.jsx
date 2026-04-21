@@ -63,11 +63,11 @@ export const AuthProvider = ({ children }) => {
     return me;
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     sparkzApi.logout();
     setUser(null);
     setIsAuthenticated(false);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -86,6 +86,17 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+/**
+ * @returns {{
+ *   user: object | null,
+ *   isAuthenticated: boolean,
+ *   isLoadingAuth: boolean,
+ *   login: (email: string, password: string) => Promise<unknown>,
+ *   register: (email: string, password: string) => Promise<unknown>,
+ *   logout: () => void,
+ *   refreshUser: () => Promise<void>,
+ * }}
+ */
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
