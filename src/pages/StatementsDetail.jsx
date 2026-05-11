@@ -51,6 +51,11 @@ function FileChip({ name, kind }) {
   );
 }
 
+// Statuses where the backend is still doing work. While the run is in one
+// of these we poll for updates; once it leaves, polling stops.
+const TRANSITIONAL_STATUSES = new Set(['ingesting', 'generating']);
+const POLL_INTERVAL_MS = 2000;
+
 export default function StatementsDetail() {
   const { runId } = useParams();
   const navigate = useNavigate();
@@ -59,11 +64,19 @@ export default function StatementsDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(/** @type {string | null} */(null));
   const [deleting, setDeleting] = useState(false);
-  const [ingesting, setIngesting] = useState(false);
-  const [ingestError, setIngestError] = useState(null);
-  const [generating, setGenerating] = useState(false);
+  // Last failure of the dispatch HTTP call itself (network / 4xx). The
+  // backend's own error (in run.error_message) is shown separately when
+  // run.status === 'error'.
+  const [ingestError, setIngestError] = useState(/** @type {string | null} */(null));
   const [generateError, setGenerateError] = useState(/** @type {string | null} */(null));
 
+  // ── Single source of truth: the server's status field on the run. ──
+  // ``ingesting`` / ``generating`` are derived from it so the polling
+  // loop and the UI cannot disagree.
+  const ingesting = run?.status === 'ingesting';
+  const generating = run?.status === 'generating';
+
+  // Initial load (once)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -86,50 +99,70 @@ export default function StatementsDetail() {
     return () => { cancelled = true; };
   }, [runId, logout, navigate]);
 
+  // Poll while the backend is still working. Stops automatically when
+  // status becomes terminal (ready / complete / error). This is the
+  // cure for "frontend stuck on 'working' while backend has finished":
+  // the server is the only source of state, and we converge to it on
+  // every tick.
+  useEffect(() => {
+    if (!runId || !run) return undefined;
+    if (!TRANSITIONAL_STATUSES.has(run.status)) return undefined;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const fresh = await sparkzApi.getStatement(runId);
+        if (cancelled) return;
+        setRun(fresh);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+          logout();
+          navigate('/login', { replace: true });
+        }
+        // Transient network failures during polling are non-fatal — the
+        // next tick will retry. Don't clobber the UI on every blip.
+      }
+    };
+    const id = window.setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [runId, run?.status, logout, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleGenerate = async () => {
-    if (!runId) return;  // route guarantees this, but TypeScript needs the guard
-    setGenerating(true);
+    if (!runId) return;
     setGenerateError(null);
     try {
-      const updated = await sparkzApi.generateStatement(runId);
-      setRun(updated);
+      const accepted = await sparkzApi.generateStatement(runId);
+      setRun(accepted); // status now 'generating'; polling effect takes over
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate primary statements';
+      const message = err instanceof Error ? err.message : 'Failed to start generation';
       if (message === 'SESSION_EXPIRED') {
         logout();
         navigate('/login', { replace: true });
         return;
       }
       setGenerateError(message);
-      try {
-        const refreshed = await sparkzApi.getStatement(runId);
-        setRun(refreshed);
-      } catch { /* ignore */ }
-    } finally {
-      setGenerating(false);
+      // Re-read so the UI reflects whatever state the server is in
+      try { setRun(await sparkzApi.getStatement(runId)); } catch { /* ignore */ }
     }
   };
 
   const handleIngest = async () => {
-    setIngesting(true);
+    if (!runId) return;
     setIngestError(null);
     try {
-      const updated = await sparkzApi.ingestStatement(runId);
-      setRun(updated);
+      const accepted = await sparkzApi.ingestStatement(runId);
+      setRun(accepted); // status now 'ingesting'; polling effect takes over
     } catch (err) {
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
         logout();
         navigate('/login', { replace: true });
         return;
       }
-      setIngestError(err.message || 'Failed to ingest workbook');
-      // Refresh the run record so we see status=error + error_message from the server
-      try {
-        const refreshed = await sparkzApi.getStatement(runId);
-        setRun(refreshed);
-      } catch { /* ignore */ }
-    } finally {
-      setIngesting(false);
+      setIngestError(err.message || 'Failed to start ingest');
+      try { setRun(await sparkzApi.getStatement(runId)); } catch { /* ignore */ }
     }
   };
 
