@@ -9,6 +9,10 @@ import Dashboard from './pages/Dashboard';
 import Analysis from './pages/Analysis';
 import Admin from './pages/Admin';
 import Billing from './pages/Billing';
+import Statements from './pages/Statements';
+import StatementsNew from './pages/StatementsNew';
+import StatementsDetail from './pages/StatementsDetail';
+import StatementsEditor from './pages/StatementsEditor';
 
 function RequireAuth() {
   const { isLoadingAuth, isAuthenticated } = useAuth();
@@ -35,6 +39,10 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/analysis" element={<Analysis />} />
         <Route path="/analysis/:runId" element={<Analysis />} />
+        <Route path="/statements" element={<Statements />} />
+        <Route path="/statements/new" element={<StatementsNew />} />
+        <Route path="/statements/:runId" element={<StatementsDetail />} />
+        <Route path="/statements/:runId/editor" element={<StatementsEditor />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/admin" element={<Admin />} />
       </Route>

@@ -22,6 +22,16 @@ export const APP_NAV_ITEMS = [
     ),
   },
   {
+    label: 'Statements',
+    path: '/statements',
+    page: 'Statements',
+    icon: (
+      <>
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+      </>
+    ),
+  },
+  {
     label: 'Billing & plan',
     path: '/billing',
     page: 'Billing',
@@ -46,6 +56,18 @@ export function getAppHeaderCopy(pathname) {
     return {
       title: 'Document analysis',
       subtitle: 'Upload a PDF and run the AI disclosure checklist',
+    };
+  }
+  if (pathname.startsWith('/statements/new')) {
+    return {
+      title: 'New engagement',
+      subtitle: 'Upload mapped Excel and supporting documents to draft statements',
+    };
+  }
+  if (pathname.startsWith('/statements')) {
+    return {
+      title: 'Statements',
+      subtitle: 'Generate UK financial statements from structured inputs',
     };
   }
   if (pathname.startsWith('/billing')) {

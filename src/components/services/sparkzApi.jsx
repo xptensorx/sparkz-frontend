@@ -1,163 +1,216 @@
-// Sparkz API — same origin in dev (Vite proxy) or full URL in production.
+// Sparkz API client.
+//
+// Single base URL configured via VITE_SPARKZ_API_URL (or empty in dev — the
+// Vite dev server proxies /api to the backend, see vite.config.js).
+//
+// All authenticated calls go through one of the verb helpers (`get`, `postJson`,
+// `postForm`, `postEmpty`, `patchJson`, `del`) so error handling and 401
+// logout are uniform across every endpoint.
+
 import { clearToken, getToken, setToken } from '@/lib/authStorage';
 
-export const SPARKZ_V2_API_BASE =
-  import.meta.env.VITE_SPARKZ_API_URL ?? '';
+export const API_BASE = import.meta.env.VITE_SPARKZ_API_URL ?? '';
 
-export const SPARKZ_LEGACY_API_BASE =
-  import.meta.env.VITE_SPARKZ_LEGACY_API_URL ?? 'https://sparkz-dct-49d5c04c0d5c.herokuapp.com';
+// ── Internal helpers ────────────────────────────────────────────────────────
 
-const NEW_API_BASE = SPARKZ_V2_API_BASE;
-
+/** @returns {Record<string, string>} */
 function authHeaders() {
   const t = getToken();
-  return t ? { Authorization: `Bearer ${t}` } : {};
+  if (t) return { Authorization: `Bearer ${t}` };
+  return {};
 }
 
-const get = (base, path) =>
-  fetch(`${base}${path}`, { headers: { ...authHeaders() } }).then(r => {
-    if (r.status === 401) {
-      clearToken();
-      throw new Error('SESSION_EXPIRED');
-    }
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  });
+/**
+ * Normalise a fetch Response into either a parsed JSON value or a thrown
+ * error. 401 responses clear the local token and throw the sentinel
+ * `SESSION_EXPIRED` so callers can redirect to /login. Non-2xx responses
+ * surface the server's `detail` / `message` field when present.
+ *
+ * @param {Response} r
+ * @returns {Promise<any>}
+ */
+async function handleResponse(r) {
+  if (r.status === 401) {
+    clearToken();
+    throw new Error('SESSION_EXPIRED');
+  }
+  if (!r.ok) {
+    let detail = `HTTP ${r.status}`;
+    try {
+      const j = await r.json();
+      detail = j.detail || j.message || detail;
+    } catch { /* ignore non-JSON error bodies */ }
+    /** @type {Error & { status?: number }} */
+    const err = new Error(detail);
+    err.status = r.status;
+    throw err;
+  }
+  // Tolerate empty bodies (e.g. some backends return empty 200 / 204 on delete).
+  const text = await r.text();
+  return text ? JSON.parse(text) : {};
+}
+
+/** @param {string} path */
+function get(path) {
+  return fetch(`${API_BASE}${path}`, {
+    headers: authHeaders(),
+  }).then(handleResponse);
+}
+
+/**
+ * @param {string} path
+ * @param {unknown} body
+ */
+function postJson(path, body) {
+  return fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  }).then(handleResponse);
+}
+
+/**
+ * @param {string} path
+ * @param {FormData} formData
+ */
+function postForm(path, formData) {
+  return fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: authHeaders(), // browser sets multipart Content-Type with boundary
+    body: formData,
+  }).then(handleResponse);
+}
+
+/** @param {string} path */
+function postEmpty(path) {
+  return fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: authHeaders(),
+  }).then(handleResponse);
+}
+
+/**
+ * @param {string} path
+ * @param {unknown} body
+ */
+function patchJson(path, body) {
+  return fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  }).then(handleResponse);
+}
+
+/** @param {string} path */
+function del(path) {
+  return fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  }).then(handleResponse);
+}
+
+/**
+ * Append the access token as a query param. Used for endpoints the browser
+ * hits directly (download links, EventSource) where we can't add an
+ * Authorization header.
+ *
+ * @param {string} path
+ */
+function withToken(path) {
+  const t = getToken();
+  if (!t) return path;
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}access_token=${encodeURIComponent(t)}`;
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
 
 export const sparkzApi = {
-  health: () => fetch(`${NEW_API_BASE}/api/health`).then(r => r.json()),
+  // Health (no auth)
+  health: () => fetch(`${API_BASE}/api/health`).then((r) => r.json()),
 
+  // Auth
+  /** @param {string} email @param {string} password */
   login: async (email, password) => {
-    const r = await fetch(`${NEW_API_BASE}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!r.ok) {
-      let detail = 'Login failed';
-      try {
-        const j = await r.json();
-        detail = j.detail || detail;
-      } catch { /* ignore */ }
-      throw new Error(detail);
-    }
-    const data = await r.json();
+    const data = await postJson('/api/auth/login', { email, password });
     setToken(data.access_token);
     return data;
   },
-
+  /** @param {string} email @param {string} password */
   register: async (email, password) => {
-    const r = await fetch(`${NEW_API_BASE}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!r.ok) {
-      let detail = 'Registration failed';
-      try {
-        const j = await r.json();
-        detail = j.detail || detail;
-      } catch { /* ignore */ }
-      throw new Error(detail);
-    }
-    const data = await r.json();
+    const data = await postJson('/api/auth/register', { email, password });
     setToken(data.access_token);
     return data;
   },
+  me: () => get('/api/auth/me'),
+  logout: () => { clearToken(); },
 
-  me: () => get(NEW_API_BASE, '/api/auth/me'),
+  // Disclosure analysis (PDF → checklist)
+  /** @param {FormData} formData */
+  startAnalysis: (formData) => postForm('/api/analyse', formData),
+  /** @param {string} runId */
+  progressUrl: (runId) => `${API_BASE}${withToken(`/api/analyse/${runId}/progress`)}`,
+  /** @param {string} runId */
+  getResults: (runId) => get(`/api/results/${runId}`),
+  /** @param {string} runId */
+  exportUrl: (runId) => `${API_BASE}${withToken(`/api/results/${runId}/export`)}`,
+  /** @param {string} runId @param {string} itemId @param {unknown} body */
+  updateItem: (runId, itemId, body) => patchJson(`/api/results/${runId}/items/${itemId}`, body),
+  listRuns: () => get('/api/runs'),
+  /** @param {string} runId */
+  deleteRun: (runId) => del(`/api/runs/${runId}`),
 
-  logout: () => {
-    clearToken();
-  },
+  // Admin
+  /** @param {string} standard */
+  adminChecklist: (standard) => get(`/api/admin/checklists/${standard}`),
+  adminUsers: () => get('/api/admin/users'),
 
-  startAnalysis: (formData) =>
-    fetch(`${NEW_API_BASE}/api/analyse`, {
-      method: 'POST',
-      headers: { ...authHeaders() },
-      body: formData,
-    }).then(async r => {
-      if (r.status === 401) {
-        clearToken();
-        throw new Error('SESSION_EXPIRED');
-      }
-      if (r.status === 402) {
-        let detail = 'Monthly quota exceeded';
-        try {
-          const j = await r.json();
-          detail = j.detail || detail;
-        } catch { /* ignore */ }
-        const err = new Error(detail);
-        err.status = 402;
-        throw err;
-      }
-      if (!r.ok) {
-        let detail = `HTTP ${r.status}`;
-        try {
-          const j = await r.json();
-          detail = j.detail || j.message || detail;
-        } catch { /* ignore */ }
-        const err = new Error(detail);
-        err.status = r.status;
-        throw err;
-      }
-      return r.json();
-    }),
+  // Billing (Stripe)
+  billingConfig: () => get('/api/billing/config'),
+  /** @param {string} plan */
+  billingCheckout: (plan) => postJson('/api/billing/checkout', { plan }),
+  billingPortal: () => postEmpty('/api/billing/portal'),
+  /** @param {string} sessionId */
+  billingCompleteCheckout: (sessionId) => postJson('/api/billing/complete-checkout', { session_id: sessionId }),
+  billingSyncSubscription: () => postEmpty('/api/billing/sync-subscription'),
 
-  progressUrl: (runId) => {
-    const t = getToken();
-    const q = t ? `?access_token=${encodeURIComponent(t)}` : '';
-    return `${NEW_API_BASE}/api/analyse/${runId}/progress${q}`;
-  },
+  // Statements (financial-statements generator)
+  listStatements: () => get('/api/statements'),
+  /** @param {string} runId */
+  getStatement: (runId) => get(`/api/statements/${runId}`),
+  /** @param {FormData} formData */
+  createStatement: (formData) => postForm('/api/statements', formData),
+  /** @param {string} runId */
+  deleteStatement: (runId) => del(`/api/statements/${runId}`),
+  /** @param {string} runId */
+  ingestStatement: (runId) => postEmpty(`/api/statements/${runId}/ingest`),
+  /** @param {string} runId */
+  generateStatement: (runId) => postEmpty(`/api/statements/${runId}/generate`),
 
-  getResults: (runId) => get(NEW_API_BASE, `/api/results/${runId}`),
+  // Editor (Task 8) — block list/patch + reference value list/patch
+  /** @param {string} runId */
+  listStatementBlocks: (runId) => get(`/api/statements/${runId}/blocks`),
+  /** @param {string} runId @param {string} blockId @param {unknown} body */
+  patchStatementBlock: (runId, blockId, body) =>
+    patchJson(`/api/statements/${runId}/blocks/${blockId}`, body),
+  /** @param {string} runId */
+  listStatementReferences: (runId) => get(`/api/statements/${runId}/references`),
+  /** @param {string} runId @param {string} refId @param {unknown} body */
+  patchStatementReference: (runId, refId, body) =>
+    patchJson(`/api/statements/${runId}/references/${refId}`, body),
 
-  exportUrl: (runId) => {
-    const t = getToken();
-    const q = t ? `?access_token=${encodeURIComponent(t)}` : '';
-    return `${NEW_API_BASE}/api/results/${runId}/export${q}`;
-  },
-
-  updateItem: (runId, itemId, body) =>
-    fetch(`${NEW_API_BASE}/api/results/${runId}/items/${itemId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(body),
-    }).then(async r => {
-      if (r.status === 401) {
-        clearToken();
-        throw new Error('SESSION_EXPIRED');
-      }
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    }),
-
-  listRuns: () => get(NEW_API_BASE, '/api/runs'),
-
-  deleteRun: (runId) =>
-    fetch(`${NEW_API_BASE}/api/runs/${runId}`, {
-      method: 'DELETE',
-      headers: { ...authHeaders() },
-    }).then(async r => {
-      if (r.status === 401) {
-        clearToken();
-        throw new Error('SESSION_EXPIRED');
-      }
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    }),
-
-  adminChecklist: (standard) => get(NEW_API_BASE, `/api/admin/checklists/${standard}`),
-
-  adminUsers: () => get(NEW_API_BASE, '/api/admin/users'),
-
-  billingConfig: () => get(NEW_API_BASE, '/api/billing/config'),
-
-  billingCheckout: async (plan) => {
-    const r = await fetch(`${NEW_API_BASE}/api/billing/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ plan }),
+  /**
+   * Download the run's generated DOCX into the browser. Uses an authed
+   * fetch so the JWT travels in the header (not in a query string), then
+   * triggers a save dialog via a transient blob URL. Returns the filename
+   * that was used.
+   *
+   * @param {string} runId
+   * @returns {Promise<string>}
+   */
+  downloadStatementDocx: async (runId) => {
+    const r = await fetch(`${API_BASE}/api/statements/${runId}/export.docx`, {
+      headers: authHeaders(),
     });
     if (r.status === 401) {
       clearToken();
@@ -167,79 +220,26 @@ export const sparkzApi = {
       let detail = `HTTP ${r.status}`;
       try {
         const j = await r.json();
-        detail = j.detail || detail;
-      } catch { /* ignore */ }
-      throw new Error(detail);
+        detail = j.detail || j.message || detail;
+      } catch { /* binary body — keep default */ }
+      const err = /** @type {Error & { status?: number }} */ (new Error(detail));
+      err.status = r.status;
+      throw err;
     }
-    return r.json();
-  },
+    const blob = await r.blob();
+    // Prefer the server-suggested filename when present.
+    const cd = r.headers.get('Content-Disposition') || '';
+    const match = /filename="?([^";]+)"?/i.exec(cd);
+    const filename = match ? match[1] : `statements-${runId}.docx`;
 
-  billingPortal: async () => {
-    const r = await fetch(`${NEW_API_BASE}/api/billing/portal`, {
-      method: 'POST',
-      headers: { ...authHeaders() },
-    });
-    if (r.status === 401) {
-      clearToken();
-      throw new Error('SESSION_EXPIRED');
-    }
-    if (!r.ok) {
-      let detail = `HTTP ${r.status}`;
-      try {
-        const j = await r.json();
-        detail = j.detail || detail;
-      } catch { /* ignore */ }
-      throw new Error(detail);
-    }
-    return r.json();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return filename;
   },
-
-  billingCompleteCheckout: async (sessionId) => {
-    const r = await fetch(`${NEW_API_BASE}/api/billing/complete-checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ session_id: sessionId }),
-    });
-    if (r.status === 401) {
-      clearToken();
-      throw new Error('SESSION_EXPIRED');
-    }
-    if (!r.ok) {
-      let detail = `HTTP ${r.status}`;
-      try {
-        const j = await r.json();
-        detail = j.detail || detail;
-      } catch { /* ignore */ }
-      throw new Error(detail);
-    }
-    return r.json();
-  },
-
-  billingSyncSubscription: async () => {
-    const r = await fetch(`${NEW_API_BASE}/api/billing/sync-subscription`, {
-      method: 'POST',
-      headers: { ...authHeaders() },
-    });
-    if (r.status === 401) {
-      clearToken();
-      throw new Error('SESSION_EXPIRED');
-    }
-    if (!r.ok) {
-      let detail = `HTTP ${r.status}`;
-      try {
-        const j = await r.json();
-        detail = j.detail || detail;
-      } catch { /* ignore */ }
-      throw new Error(detail);
-    }
-    return r.json();
-  },
-
-  frameworks: (jurisdiction = 'UK') =>
-    get(SPARKZ_LEGACY_API_BASE, `/frameworks?jurisdiction=${jurisdiction}`),
-  framework: (code) => get(SPARKZ_LEGACY_API_BASE, `/frameworks/${code}`),
-  templates: (frameworkCode) =>
-    get(SPARKZ_LEGACY_API_BASE, `/checklist${frameworkCode ? `?framework_code=${frameworkCode}` : ''}`),
-  checklistTree: (templateCode, frameworkCode) =>
-    get(SPARKZ_LEGACY_API_BASE, `/checklist/${templateCode}${frameworkCode ? `?framework_code=${frameworkCode}` : ''}`),
 };

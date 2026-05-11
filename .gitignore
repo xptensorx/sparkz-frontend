@@ -27,4 +27,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Editor atomic-write temp files (some editors leave PID-suffixed backups
+# alongside files they save — those must never reach the repo)
+*.tmp.*
+*.bak
+*.orig
+*~
+
 .env

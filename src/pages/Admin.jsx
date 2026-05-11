@@ -114,7 +114,7 @@ export default function Admin() {
       {tab === 'checklist' && (
         <div className="space-y-3">
           <div className="flex gap-2">
-            {['frs105', 'frs102'].map((f) => (
+            {['frs105', 'frs102', 'ifrs'].map((f) => (
               <button
                 key={f}
                 type="button"

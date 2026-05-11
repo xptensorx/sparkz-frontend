@@ -4,6 +4,7 @@ import { sparkzApi } from '../services/sparkzApi';
 const STANDARDS = [
   { value: 'frs105', label: 'FRS 105 — Micro-entity accounts', hint: 'Streamlined disclosures for micro-entities' },
   { value: 'frs102', label: 'FRS 102 Section 1A — Small company', hint: 'Reduced disclosures for small entities' },
+  { value: 'ifrs', label: 'IFRS — UK-adopted', hint: 'Full IFRS disclosure checklist (longer runs; ~5× more items than FRS 102)' },
 ];
 
 export default function AnalysisForm({ onAnalysisStarting, onRunStarted, onError, loading, setLoading }) {

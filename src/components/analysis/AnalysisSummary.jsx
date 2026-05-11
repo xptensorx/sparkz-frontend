@@ -9,7 +9,10 @@ export default function AnalysisSummary({ result }) {
     { label: 'N/A',          count: summary.not_applicable,   color: 'bg-gray-100 text-gray-500 border-gray-200' },
   ].map(s => ({ ...s, pct: total ? Math.round((s.count / total) * 100) : 0 }));
 
-  const standardLabel = standard === 'frs105' ? 'FRS 105 (Micro-entity)' : 'FRS 102 Section 1A (Small company)';
+  const standardLabel =
+    standard === 'frs105' ? 'FRS 105 (Micro-entity)'
+      : standard === 'ifrs' ? 'IFRS (UK-adopted)'
+        : 'FRS 102 Section 1A (Small company)';
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">

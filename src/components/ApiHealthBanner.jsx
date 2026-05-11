@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sparkzApi, SPARKZ_V2_API_BASE } from './services/sparkzApi';
+import { sparkzApi, API_BASE } from './services/sparkzApi';
 
 export default function ApiHealthBanner() {
   const [offline, setOffline] = useState(false);
@@ -22,7 +22,7 @@ export default function ApiHealthBanner() {
       </span>
       <span className="font-normal opacity-90">
         Start the backend and set <code className="bg-red-700/80 px-1 rounded">VITE_SPARKZ_API_URL</code> if not using{' '}
-        <code className="bg-red-700/80 px-1 rounded">{SPARKZ_V2_API_BASE}</code>
+        <code className="bg-red-700/80 px-1 rounded">{API_BASE || '/api (dev proxy)'}</code>
       </span>
     </div>
   );
