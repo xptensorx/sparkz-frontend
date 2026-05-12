@@ -52,8 +52,14 @@ async function handleResponse(r) {
 
 /** @param {string} path */
 function get(path) {
+  // ``cache: 'no-store'`` is required so polling (e.g. StatementsDetail's
+  // status loop) always sees the latest server state. Without it, the
+  // browser's default HTTP cache returns a stale response for repeated
+  // GETs of the same URL — a manual page refresh shows the new state
+  // but in-page polling doesn't.
   return fetch(`${API_BASE}${path}`, {
     headers: authHeaders(),
+    cache: 'no-store',
   }).then(handleResponse);
 }
 

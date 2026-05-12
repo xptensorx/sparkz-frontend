@@ -279,8 +279,8 @@ export default function Analysis() {
         <ApiHealthBanner />
 
         {!result && !loading && (
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#16133a] via-[#1e1b4b] to-[#312e81] px-5 py-8 text-white shadow-xl shadow-indigo-950/30 ring-1 ring-white/10 sm:rounded-3xl sm:px-8 sm:py-10">
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#e6c33a]/15 blur-3xl" />
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-indigo-dark via-brand-indigo to-[#312e81] px-5 py-8 text-white shadow-xl shadow-indigo-950/30 ring-1 ring-white/10 sm:rounded-3xl sm:px-8 sm:py-10">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand-gold/15 blur-3xl" />
             <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-indigo-400/20 blur-3xl" />
             <div className="relative">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-200/90">Checklist engine</p>
@@ -305,7 +305,7 @@ export default function Analysis() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[#16133a]">Loading analysis</p>
+                <p className="font-bold text-brand-indigo-dark">Loading analysis</p>
                 <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">
                   Fetching run status from the server… Progress will appear within a few seconds.
                 </p>
@@ -325,7 +325,7 @@ export default function Analysis() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[#16133a]">Starting analysis</p>
+                <p className="font-bold text-brand-indigo-dark">Starting analysis</p>
                 <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">{progress.detail}</p>
                 <p className="text-xs text-gray-400 mt-4 leading-relaxed">
                   On free cloud tiers the API can take <strong className="text-gray-600">30–60 seconds</strong> to wake
@@ -342,7 +342,7 @@ export default function Analysis() {
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Pipeline</p>
-                <p className="font-bold text-[#16133a] text-lg mt-0.5">Analysis in progress</p>
+                <p className="font-bold text-brand-indigo-dark text-lg mt-0.5">Analysis in progress</p>
               </div>
               <div className="flex flex-row items-center justify-between gap-3 sm:block sm:text-right">
                 <span className="text-xs tabular-nums text-gray-400 sm:block">{formatElapsed(elapsedTime)}</span>
@@ -420,7 +420,7 @@ export default function Analysis() {
             <button
               type="button"
               onClick={handleReset}
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b] transition-colors"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-indigo-dark px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-indigo-hover transition-colors"
             >
               Try another file
             </button>
@@ -442,13 +442,13 @@ export default function Analysis() {
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Results</p>
-                <h2 className="text-2xl font-black text-[#16133a] mt-1">Disclosure checklist</h2>
+                <h2 className="text-2xl font-black text-brand-indigo-dark mt-1">Disclosure checklist</h2>
                 <p className="text-sm text-gray-500 mt-1">{result.filename}</p>
               </div>
               <button
                 type="button"
                 onClick={handleReset}
-                className="inline-flex items-center justify-center rounded-xl border-2 border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-[#16133a] hover:border-[#e6c33a] hover:bg-amber-50/50 transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border-2 border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-brand-indigo-dark hover:border-brand-gold hover:bg-amber-50/50 transition-colors"
               >
                 New analysis
               </button>

@@ -47,9 +47,9 @@ export default function ChecklistNode({ node, answers, onChange, entityType }) {
       <div className={`mb-6 ${!applicable ? 'opacity-40' : ''}`}>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center gap-3 px-4 py-3 bg-[#1e1b4b] text-white rounded-xl text-left hover:bg-[#2a2768] transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 bg-brand-indigo text-white rounded-xl text-left hover:bg-[#2a2768] transition-colors"
         >
-          <span className="w-6 h-6 flex items-center justify-center bg-[#e6c33a] text-[#1e1b4b] rounded-md text-xs font-black flex-shrink-0">
+          <span className="w-6 h-6 flex items-center justify-center bg-brand-gold text-brand-indigo rounded-md text-xs font-black flex-shrink-0">
             {node.display_number}
           </span>
           <span className="font-bold text-sm flex-1">{node.title}</span>
@@ -74,7 +74,7 @@ export default function ChecklistNode({ node, answers, onChange, entityType }) {
   return (
     <div className={`${indent} ${!applicable ? 'opacity-40' : ''}`}>
       <div className={`group flex items-start gap-3 px-4 py-3 rounded-lg transition-colors ${applicable ? 'hover:bg-[#f0f0f8]' : ''} ${node.level === 1 ? 'border-b border-gray-100' : ''}`}>
-        <span className={`flex-shrink-0 text-xs font-bold mt-0.5 w-10 ${node.level === 1 ? 'text-[#1e1b4b]' : 'text-gray-400'}`}>
+        <span className={`flex-shrink-0 text-xs font-bold mt-0.5 w-10 ${node.level === 1 ? 'text-brand-indigo' : 'text-gray-400'}`}>
           {node.display_number}
         </span>
         <div className="flex-1 min-w-0">

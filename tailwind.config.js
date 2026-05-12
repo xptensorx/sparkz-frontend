@@ -10,6 +10,14 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			// Brand palette. Use these everywhere instead of bare hex literals.
+  			brand: {
+  				indigo:         '#1e1b4b',
+  				'indigo-dark':  '#16133a',
+  				'indigo-hover': '#25216b',
+  				gold:           '#e6c33a',
+  				'gold-dark':    '#d4af2f',
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

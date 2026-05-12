@@ -49,7 +49,7 @@ export default function AnalysisForm({ onAnalysisStarting, onRunStarted, onError
       <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-100/80 to-transparent blur-2xl pointer-events-none" />
       <div className="relative space-y-8">
         <div>
-          <h2 className="text-2xl font-black text-[#16133a] tracking-tight">Upload & configure</h2>
+          <h2 className="text-2xl font-black text-brand-indigo-dark tracking-tight">Upload & configure</h2>
           <p className="text-sm text-gray-500 mt-2 max-w-lg leading-relaxed">
             PDF financial statements only. Typical runs finish in a few minutes; large files or cold servers may take longer.
           </p>
@@ -63,7 +63,7 @@ export default function AnalysisForm({ onAnalysisStarting, onRunStarted, onError
                 key={s.value}
                 className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-4 transition-all ${
                   standard === s.value
-                    ? 'border-[#16133a] bg-gradient-to-br from-indigo-50/80 to-white shadow-md ring-1 ring-indigo-100'
+                    ? 'border-brand-indigo-dark bg-gradient-to-br from-indigo-50/80 to-white shadow-md ring-1 ring-indigo-100'
                     : 'border-gray-100 hover:border-gray-200 bg-gray-50/50 hover:bg-white'
                 }`}
               >
@@ -74,10 +74,10 @@ export default function AnalysisForm({ onAnalysisStarting, onRunStarted, onError
                     value={s.value}
                     checked={standard === s.value}
                     onChange={() => setStandard(s.value)}
-                    className="mt-1 accent-[#16133a]"
+                    className="mt-1 accent-brand-indigo-dark"
                   />
                   <div>
-                    <span className={`text-sm font-bold ${standard === s.value ? 'text-[#16133a]' : 'text-gray-700'}`}>
+                    <span className={`text-sm font-bold ${standard === s.value ? 'text-brand-indigo-dark' : 'text-gray-700'}`}>
                       {s.label}
                     </span>
                     <p className="text-xs text-gray-500 mt-1 leading-snug">{s.hint}</p>
@@ -150,7 +150,7 @@ export default function AnalysisForm({ onAnalysisStarting, onRunStarted, onError
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-2xl bg-gradient-to-r from-[#e6c33a] to-[#d4af2f] py-4 text-[#16133a] font-black text-sm shadow-lg shadow-amber-900/15 hover:shadow-xl hover:brightness-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2"
+          className="w-full rounded-2xl bg-gradient-to-r from-brand-gold to-brand-gold-dark py-4 text-brand-indigo-dark font-black text-sm shadow-lg shadow-amber-900/15 hover:shadow-xl hover:brightness-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

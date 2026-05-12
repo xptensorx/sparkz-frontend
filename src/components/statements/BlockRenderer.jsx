@@ -62,8 +62,8 @@ function HeadingNode({ node }) {
   const level = Math.min(Math.max(parseInt(node?.attrs?.level ?? 2, 10) || 2, 1), 6);
   const children = (node.content || []).map((c, i) => <Node key={i} node={c} />);
   switch (level) {
-    case 1: return <h1 className="text-2xl font-black text-[#1e1b4b] mt-6 mb-3 first:mt-0">{children}</h1>;
-    case 2: return <h2 className="text-lg font-bold text-[#1e1b4b] mt-5 mb-2">{children}</h2>;
+    case 1: return <h1 className="text-2xl font-black text-brand-indigo mt-6 mb-3 first:mt-0">{children}</h1>;
+    case 2: return <h2 className="text-lg font-bold text-brand-indigo mt-5 mb-2">{children}</h2>;
     case 3: return <h3 className="text-base font-bold text-gray-700 mt-4 mb-2">{children}</h3>;
     default: return <h4 className="text-sm font-semibold text-gray-700 mt-3 mb-2">{children}</h4>;
   }
@@ -100,7 +100,7 @@ function TableRowNode({ node }) {
 
 function TableHeaderNode({ node }) {
   return (
-    <th className="border-b-2 border-[#1e1b4b]/30 px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-[#1e1b4b]">
+    <th className="border-b-2 border-brand-indigo/30 px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-brand-indigo">
       {(node.content || []).map((c, i) => <CellInner key={i} node={c} />)}
     </th>
   );

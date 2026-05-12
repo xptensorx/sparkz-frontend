@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Download, Loader2 } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import { sparkzApi } from '../components/services/sparkzApi';
 import { useAuth } from '@/lib/AuthContext';
+import { GeneratePanel } from '@/components/statements/run-panels/GeneratePanel';
+import { IngestPanel } from '@/components/statements/run-panels/IngestPanel';
+import { NarrativePanel } from '@/components/statements/run-panels/NarrativePanel';
+import { StylePanel } from '@/components/statements/run-panels/StylePanel';
 
 const STATUS_TONE = {
   pending:    'bg-gray-100 text-gray-600 border-gray-200',
@@ -69,12 +72,18 @@ export default function StatementsDetail() {
   // run.status === 'error'.
   const [ingestError, setIngestError] = useState(/** @type {string | null} */(null));
   const [generateError, setGenerateError] = useState(/** @type {string | null} */(null));
+  // True between the click and the 202 response. Without this, the user
+  // sees no feedback during the dispatch round-trip — the button stays
+  // enabled until the response sets run.status, which can be 200-500ms.
+  const [dispatchingIngest, setDispatchingIngest] = useState(false);
+  const [dispatchingGenerate, setDispatchingGenerate] = useState(false);
 
   // ── Single source of truth: the server's status field on the run. ──
-  // ``ingesting`` / ``generating`` are derived from it so the polling
-  // loop and the UI cannot disagree.
-  const ingesting = run?.status === 'ingesting';
-  const generating = run?.status === 'generating';
+  // ``ingesting`` / ``generating`` are derived from it. ``dispatching*``
+  // covers the small click→202 window so the UI never has a "did my
+  // click register?" gap.
+  const ingesting = dispatchingIngest || run?.status === 'ingesting';
+  const generating = dispatchingGenerate || run?.status === 'generating';
 
   // Initial load (once)
   useEffect(() => {
@@ -133,6 +142,7 @@ export default function StatementsDetail() {
   const handleGenerate = async () => {
     if (!runId) return;
     setGenerateError(null);
+    setDispatchingGenerate(true);
     try {
       const accepted = await sparkzApi.generateStatement(runId);
       setRun(accepted); // status now 'generating'; polling effect takes over
@@ -146,12 +156,15 @@ export default function StatementsDetail() {
       setGenerateError(message);
       // Re-read so the UI reflects whatever state the server is in
       try { setRun(await sparkzApi.getStatement(runId)); } catch { /* ignore */ }
+    } finally {
+      setDispatchingGenerate(false);
     }
   };
 
   const handleIngest = async () => {
     if (!runId) return;
     setIngestError(null);
+    setDispatchingIngest(true);
     try {
       const accepted = await sparkzApi.ingestStatement(runId);
       setRun(accepted); // status now 'ingesting'; polling effect takes over
@@ -163,6 +176,8 @@ export default function StatementsDetail() {
       }
       setIngestError(err.message || 'Failed to start ingest');
       try { setRun(await sparkzApi.getStatement(runId)); } catch { /* ignore */ }
+    } finally {
+      setDispatchingIngest(false);
     }
   };
 
@@ -208,7 +223,7 @@ export default function StatementsDetail() {
           <button
             type="button"
             onClick={() => navigate('/statements')}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b]"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-indigo-dark px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-indigo-hover"
           >
             Back to engagements
           </button>
@@ -236,7 +251,7 @@ export default function StatementsDetail() {
             >
               ← All engagements
             </button>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-[#1e1b4b] sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-brand-indigo sm:text-3xl">
               {run.engagement_name}
             </h1>
             {run.entity_name && (
@@ -260,7 +275,7 @@ export default function StatementsDetail() {
 
         {/* Metadata */}
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold text-[#1e1b4b]">Engagement details</h2>
+          <h2 className="mb-3 text-sm font-bold text-brand-indigo">Engagement details</h2>
           <dl>
             <MetaRow label="Framework" value={fwLabel} />
             <MetaRow label="Entity type" value={run.entity_type === 'single' ? 'Single entity' : run.entity_type} />
@@ -281,7 +296,7 @@ export default function StatementsDetail() {
 
         {/* Files */}
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold text-[#1e1b4b]">Uploaded files</h2>
+          <h2 className="mb-3 text-sm font-bold text-brand-indigo">Uploaded files</h2>
           <div className="space-y-3">
             {run.excel_filename && (
               <FileChip name={run.excel_filename} kind="Mapped Excel" />
@@ -324,411 +339,5 @@ export default function StatementsDetail() {
         )}
       </div>
     </SidebarLayout>
-  );
-}
-
-
-/**
- * Generation panel — shown once the workbook has been ingested.
- *
- * States:
- *   - generating (in flight)                    → spinner
- *   - block_count > 0 and not generating        → block-count summary + "Re-generate" button
- *   - block_count === 0 and ingest succeeded    → "Generate primary statements" CTA
- *   - generateError                              → error message + retry
- *
- * @param {{
- *   run: any,
- *   generating: boolean,
- *   generateError: string | null,
- *   onGenerate: () => void,
- *   onOpenEditor: () => void
- * }} props
- */
-function GeneratePanel({ run, generating, generateError, onGenerate, onOpenEditor }) {
-  const blockCount = run.block_count || 0;
-
-  if (generating) {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <svg className="h-5 w-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <div>
-            <p className="font-bold text-[#1e1b4b]">Generating primary statements…</p>
-            <p className="text-sm text-gray-500">Building the five face-of-the-accounts blocks. Deterministic — no AI calls.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (blockCount === 0) {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-[#1e1b4b]">Generate primary statements</h2>
-        <p className="mb-4 text-sm text-gray-500 max-w-xl">
-          Produce the five UK AFS primary statements (P&amp;L, OCI, Balance Sheet, Changes in Equity, Cash Flows) as editable blocks. Every numeric value is locked to a workbook reference; numbers can&apos;t be hallucinated by an AI.
-        </p>
-        {generateError && (
-          <div className="mb-4 rounded-xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-700">
-            <p className="font-bold">Generation failed</p>
-            <p>{generateError}</p>
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={onGenerate}
-          className="rounded-xl bg-gradient-to-r from-[#e6c33a] to-[#d4af2f] px-5 py-2.5 text-sm font-bold text-[#16133a] shadow-md hover:brightness-[1.02]"
-        >
-          Generate primary statements →
-        </button>
-      </div>
-    );
-  }
-
-  // block_count > 0
-  return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-bold text-[#1e1b4b]">Primary statements</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
-            <span className="font-semibold text-gray-700">{blockCount}</span> generated block{blockCount === 1 ? '' : 's'} — AI draft, accountant review required.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onGenerate}
-          className="flex-shrink-0 text-xs font-semibold text-gray-500 hover:text-gray-700 hover:underline"
-        >
-          Re-generate
-        </button>
-      </div>
-      {generateError && (
-        <div className="mb-3 rounded-xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-700">
-          <p className="font-bold">Last generation attempt failed</p>
-          <p>{generateError}</p>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={onOpenEditor}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b]"
-        >
-          Open block editor →
-        </button>
-        <ExportDocxLink runId={run.id} />
-      </div>
-    </div>
-  );
-}
-
-
-/**
- * House-style summary — shown after ingest when the prior-year AFS was
- * processed (or attempted). Renders two states:
- *  - style extracted → counts of section_order / terminology / tone observations
- *  - no style yet    → friendly explainer (no prior-year uploaded, or LLM key
- *                      missing, or extraction failed validation)
- *
- * The full style guide JSON lives on StatementRun.style_guide — this panel
- * only shows summary counts so the detail-page response stays compact.
- *
- * @param {{summary: {
- *   source_file: string | null,
- *   prompt_version: string | null,
- *   has_style: boolean,
- *   section_order_count: number,
- *   terminology_count: number,
- *   tone_observations_count: number,
- *   warnings_count: number,
- * }}} props
- */
-function StylePanel({ summary }) {
-  if (!summary.has_style) {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-[#1e1b4b]">House style</h2>
-        <p className="text-sm text-gray-500 max-w-xl">
-          No house-style guide has been extracted yet. Upload last year&apos;s final AFS as a prior-year document, then re-ingest, to capture this firm&apos;s section order, terminology, narrative tone and table conventions for the generator to reuse.
-        </p>
-        {summary.warnings_count > 0 && (
-          <p className="mt-3 text-xs text-amber-700">
-            {summary.warnings_count} warning{summary.warnings_count === 1 ? '' : 's'} recorded during the attempt.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-bold text-[#1e1b4b]">House style</h2>
-          <p className="text-xs text-gray-500 mt-0.5 truncate">
-            Source: <span className="font-semibold text-gray-700">{summary.source_file || '—'}</span>
-          </p>
-        </div>
-        {summary.prompt_version && (
-          <span className="flex-shrink-0 inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-[10px] font-mono font-semibold">
-            {summary.prompt_version}
-          </span>
-        )}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Sections</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.section_order_count}</p>
-          <p className="mt-0.5 text-[10px] text-gray-400">in document order</p>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Terminology</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.terminology_count}</p>
-          <p className="mt-0.5 text-[10px] text-gray-400">firm-specific terms</p>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Tone notes</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.tone_observations_count}</p>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Warnings</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.warnings_count}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-/**
- * Narrative-extract summary — shown after ingest when a 20-F-style source
- * was processed (or attempted). Renders three states:
- *  - source found    → counts + UK sections covered
- *  - no source       → friendly explainer + warnings
- */
-function NarrativePanel({ summary }) {
-  const found = !!summary.source_file;
-
-  if (!found) {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-[#1e1b4b]">20-F narrative</h2>
-        <p className="text-sm text-gray-500 max-w-xl">
-          No 20-F-style narrative source was found among the uploaded context documents. Upload a US 20-F filing as a context document to enable Strategic Report / Directors&apos; Report narrative generation.
-        </p>
-        {summary.warnings_count > 0 && (
-          <p className="mt-3 text-xs text-amber-700">
-            {summary.warnings_count} warning{summary.warnings_count === 1 ? '' : 's'} recorded during the attempt.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="mb-4">
-        <h2 className="text-sm font-bold text-[#1e1b4b]">20-F narrative</h2>
-        <p className="text-xs text-gray-500 mt-0.5 truncate">
-          Source: <span className="font-semibold text-gray-700">{summary.source_file}</span>
-        </p>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Items extracted</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.items_extracted}</p>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Items skipped</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.items_skipped}</p>
-          <p className="mt-0.5 text-[10px] text-gray-400">SEC-only / replaced by workbook</p>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">UK sections covered</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.uk_sections_covered.length}</p>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Warnings</p>
-          <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{summary.warnings_count}</p>
-        </div>
-      </div>
-      {summary.uk_sections_covered.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {summary.uk_sections_covered.map((section) => (
-            <span
-              key={section}
-              className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 px-2.5 py-1 text-xs font-semibold"
-            >
-              {section.replace('_', ' ')}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-/** State-aware ingest UI block. Renders different content per run.status. */
-function IngestPanel({ run, ingesting, ingestError, onIngest }) {
-  const status = run.status;
-  const summary = run.parsed_summary;
-
-  // Pending: prompt the user to start ingestion
-  if (status === 'pending' && !ingesting) {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-[#1e1b4b]">Ingest workbook</h2>
-        <p className="mb-4 text-sm text-gray-500 max-w-xl">
-          Parse the uploaded Excel into structured accounts (primary statements, notes, basis of presentation). Deterministic — no AI calls, no cost. Typically completes in under 30 seconds.
-        </p>
-        {ingestError && (
-          <div className="mb-4 rounded-xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-700">
-            <p className="font-bold">Ingest failed</p>
-            <p>{ingestError}</p>
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={onIngest}
-          className="rounded-xl bg-gradient-to-r from-[#e6c33a] to-[#d4af2f] px-5 py-2.5 text-sm font-bold text-[#16133a] shadow-md hover:brightness-[1.02]"
-        >
-          Ingest workbook →
-        </button>
-      </div>
-    );
-  }
-
-  // Ingesting: spinner
-  if (ingesting || status === 'ingesting') {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <svg className="h-5 w-5 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <div>
-            <p className="font-bold text-[#1e1b4b]">Parsing workbook…</p>
-            <p className="text-sm text-gray-500">Extracting primary statements, notes, and basis of presentation.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error: show error_message + retry
-  if (status === 'error') {
-    return (
-      <div className="rounded-3xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-6 shadow-md ring-1 ring-red-100/80">
-        <p className="font-bold text-red-800">Ingest failed</p>
-        <p className="mt-2 text-sm text-red-700/90 leading-relaxed">
-          {run.error_message || 'The workbook could not be parsed. Check the file format and try again.'}
-        </p>
-        <button
-          type="button"
-          onClick={onIngest}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b]"
-        >
-          Retry ingest
-        </button>
-      </div>
-    );
-  }
-
-  // Ready (or beyond): show the parsed summary
-  if (summary) {
-    const tiles = [
-      { label: 'Primary statements', value: summary.primary_statement_count },
-      { label: 'Notes',               value: summary.notes_count },
-      { label: 'Basis triples',       value: summary.basis_triples_count },
-      { label: 'Currency',            value: summary.currency_detected || '—' },
-      { label: 'Warnings',            value: summary.warnings_count },
-      { label: 'Skipped sheets',      value: summary.skipped_sheets_count },
-    ];
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-[#1e1b4b]">Parsed workbook</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Deterministic extraction of accounts, notes, and basis-of-presentation triples.</p>
-          </div>
-          <button
-            type="button"
-            onClick={onIngest}
-            className="text-xs font-semibold text-gray-500 hover:text-gray-700 hover:underline"
-          >
-            Re-ingest
-          </button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {tiles.map((t) => (
-            <div key={t.label} className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t.label}</p>
-              <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{t.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback for unexpected status values
-  return (
-    <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/40 p-6 text-center">
-      <p className="text-sm text-gray-500">Run is in state <code className="rounded bg-gray-100 px-1 text-xs">{status}</code>. No action available yet.</p>
-    </div>
-  );
-}
-
-
-/**
- * Secondary action that downloads the run's generated DOCX. Reuses the
- * sparkzApi helper, so the JWT travels in the auth header (not the URL)
- * and the filename comes from the server's Content-Disposition.
- *
- * @param {{ runId: string }} props
- */
-function ExportDocxLink({ runId }) {
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState(/** @type {string | null} */(null));
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleClick = async () => {
-    setPending(true);
-    setError(null);
-    try {
-      await sparkzApi.downloadStatementDocx(runId);
-    } catch (err) {
-      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
-        logout();
-        navigate('/login', { replace: true });
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to export DOCX');
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={pending}
-        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-[#16133a] hover:bg-gray-50 disabled:opacity-50"
-      >
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {pending ? 'Building…' : 'Export DOCX'}
-      </button>
-      {error && <span className="text-xs text-red-700" title={error}>{error}</span>}
-    </div>
   );
 }

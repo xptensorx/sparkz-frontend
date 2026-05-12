@@ -112,7 +112,7 @@ export default function StatementsEditor() {
           <button
             type="button"
             onClick={() => navigate(`/statements/${runId}`)}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b]"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-indigo-dark px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-indigo-hover"
           >
             Back to engagement
           </button>
@@ -137,7 +137,7 @@ export default function StatementsEditor() {
               >
                 ← {run.engagement_name}
               </button>
-              <h1 className="mt-1 text-xl font-black tracking-tight text-[#1e1b4b]">
+              <h1 className="mt-1 text-xl font-black tracking-tight text-brand-indigo">
                 Block editor
               </h1>
             </div>
@@ -289,7 +289,7 @@ function BlockToolbar({ runId, block, onBlockUpdated, onAuthError }) {
           <button
             type="button"
             onClick={() => setEditingTitle(true)}
-            className="block w-full truncate text-left text-base font-bold text-[#1e1b4b] hover:text-indigo-700"
+            className="block w-full truncate text-left text-base font-bold text-brand-indigo hover:text-indigo-700"
             title="Click to rename"
           >
             {block.title || '(untitled)'}
@@ -361,7 +361,7 @@ function ExportDocxButton({ runId, disabled, onAuthError }) {
         type="button"
         onClick={handleClick}
         disabled={disabled || pending}
-        className="inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-4 py-2 text-xs font-bold text-white hover:bg-[#25216b] disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-xl bg-brand-indigo-dark px-4 py-2 text-xs font-bold text-white hover:bg-brand-indigo-hover disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
         {pending ? 'Building…' : 'Export DOCX'}

@@ -117,14 +117,14 @@ function ResultRow({ item, runId }) {
                     onChange={e => setNotes(e.target.value)}
                     onClick={e => e.stopPropagation()}
                     placeholder="Add notes..."
-                    className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1e1b4b]/20"
+                    className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-indigo/20"
                   />
                 </div>
                 {isDirty && (
                   <button
                     onClick={e => { e.stopPropagation(); saveOverride(); }}
                     disabled={saving}
-                    className="mt-5 px-4 py-1.5 bg-[#1e1b4b] text-white text-xs font-semibold rounded-lg hover:bg-[#2d2a6e] disabled:opacity-50 transition-colors"
+                    className="mt-5 px-4 py-1.5 bg-brand-indigo text-white text-xs font-semibold rounded-lg hover:bg-[#2d2a6e] disabled:opacity-50 transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save'}
                   </button>
@@ -168,7 +168,7 @@ export default function AnalysisResults({ results, runId }) {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === s ? 'bg-[#1e1b4b] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === s ? 'bg-brand-indigo text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
               >
                 {FILTER_LABELS[s]}
               </button>
@@ -181,7 +181,7 @@ export default function AnalysisResults({ results, runId }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search items..."
-                className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-[#1e1b4b]/20 sm:w-44"
+                className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-brand-indigo/20 sm:w-44"
               />
             </div>
             <button

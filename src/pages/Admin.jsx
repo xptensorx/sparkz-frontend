@@ -55,21 +55,21 @@ export default function Admin() {
 
   return (
     <SidebarLayout activePage="Admin">
-      <h1 className="mb-2 text-xl font-black text-[#1e1b4b] sm:text-2xl">Admin</h1>
+      <h1 className="mb-2 text-xl font-black text-brand-indigo sm:text-2xl">Admin</h1>
       <p className="mb-6 text-sm text-gray-400">User activity and checklist templates (read-only).</p>
 
       <div className="mb-6 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setTab('users')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold ${tab === 'users' ? 'bg-[#1e1b4b] text-white' : 'bg-gray-100 text-gray-600'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold ${tab === 'users' ? 'bg-brand-indigo text-white' : 'bg-gray-100 text-gray-600'}`}
         >
           Users
         </button>
         <button
           type="button"
           onClick={() => setTab('checklist')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold ${tab === 'checklist' ? 'bg-[#1e1b4b] text-white' : 'bg-gray-100 text-gray-600'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold ${tab === 'checklist' ? 'bg-brand-indigo text-white' : 'bg-gray-100 text-gray-600'}`}
         >
           Checklist JSON
         </button>
@@ -119,13 +119,13 @@ export default function Admin() {
                 key={f}
                 type="button"
                 onClick={() => setFramework(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${framework === f ? 'bg-[#1e1b4b] text-white' : 'bg-gray-100'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${framework === f ? 'bg-brand-indigo text-white' : 'bg-gray-100'}`}
               >
                 {f}
               </button>
             ))}
           </div>
-          <pre className="bg-[#1e1b4b] text-green-100 text-xs p-4 rounded-xl overflow-auto max-h-[480px] whitespace-pre-wrap">
+          <pre className="bg-brand-indigo text-green-100 text-xs p-4 rounded-xl overflow-auto max-h-[480px] whitespace-pre-wrap">
             {loading ? '…' : checklist ? JSON.stringify(checklist, null, 2) : '—'}
           </pre>
         </div>

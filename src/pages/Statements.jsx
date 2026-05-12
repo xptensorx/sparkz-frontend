@@ -53,6 +53,25 @@ export default function Statements() {
     refresh();
   }, []);  // intentional: refresh closes over `logout`/`navigate` from useAuth/useNavigate, both stable
 
+  // Stale-data avoidance: re-fetch when the tab regains focus AND poll while
+  // any run is in a transitional state (ingest/generate in flight on the
+  // detail page). Without this the list keeps showing 'ingesting' / 'generating'
+  // long after the backend finished, until the user manually reloads.
+  useEffect(() => {
+    const onFocus = () => { refresh(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const transitional = runs.some((r) =>
+      ['ingesting', 'generating', 'processing'].includes(r.status),
+    );
+    if (!transitional) return undefined;
+    const id = window.setInterval(refresh, 3000);
+    return () => window.clearInterval(id);
+  }, [runs]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleDelete = async (runId, name) => {
     if (!confirm(`Delete engagement "${name}"? This removes all uploaded files.`)) return;
     setDeletingId(runId);
@@ -75,7 +94,7 @@ export default function Statements() {
     <SidebarLayout activePage="Statements">
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-black tracking-tight text-[#1e1b4b] sm:text-3xl">
+          <h1 className="text-2xl font-black tracking-tight text-brand-indigo sm:text-3xl">
             Statements
           </h1>
           <p className="mt-1 text-sm text-gray-400 sm:text-base">
@@ -85,7 +104,7 @@ export default function Statements() {
         <button
           type="button"
           onClick={() => navigate('/statements/new')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#1e1b4b] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#2d2a6e]"
+          className="flex items-center justify-center gap-2 rounded-xl bg-brand-indigo px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#2d2a6e]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path d="M12 5v14M5 12h14" />
@@ -102,19 +121,19 @@ export default function Statements() {
 
       {!loading && runs.length === 0 && !error && (
         <div className="rounded-3xl border border-gray-100 bg-gradient-to-br from-indigo-50/50 to-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1e1b4b]">
-            <svg className="h-8 w-8 text-[#e6c33a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-indigo">
+            <svg className="h-8 w-8 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-lg font-black text-[#1e1b4b]">No engagements yet</h3>
+          <h3 className="text-lg font-black text-brand-indigo">No engagements yet</h3>
           <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
             Upload a mapped Excel, add a prior-year PDF and any context documents, and Sparkz will draft a complete set of UK statements.
           </p>
           <button
             type="button"
             onClick={() => navigate('/statements/new')}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#e6c33a] px-5 py-2.5 text-sm font-bold text-[#1e1b4b] hover:bg-[#d4b034] transition-colors"
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-indigo hover:bg-[#d4b034] transition-colors"
           >
             Start an engagement →
           </button>
@@ -144,7 +163,7 @@ export default function Statements() {
                   return (
                     <tr key={r.id} className="border-t border-gray-50 transition-colors hover:bg-[#f6f6f8]/50">
                       <td className="px-4 py-3 sm:px-6 sm:py-4">
-                        <div className="font-semibold text-[#1e1b4b] truncate max-w-[260px]">
+                        <div className="font-semibold text-brand-indigo truncate max-w-[260px]">
                           {r.engagement_name}
                         </div>
                         {r.entity_name && (
@@ -174,7 +193,7 @@ export default function Statements() {
                         <button
                           type="button"
                           onClick={() => navigate(`/statements/${r.id}`)}
-                          className="text-sm font-semibold text-[#1e1b4b] hover:underline"
+                          className="text-sm font-semibold text-brand-indigo hover:underline"
                         >
                           Open
                         </button>

@@ -192,7 +192,7 @@ export default function StatementsNew() {
   return (
     <SidebarLayout activePage="Statements">
       <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#16133a] via-[#1e1b4b] to-[#312e81] px-6 py-8 text-white shadow-xl shadow-indigo-950/30 ring-1 ring-white/10">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-indigo-dark via-brand-indigo to-[#312e81] px-6 py-8 text-white shadow-xl shadow-indigo-950/30 ring-1 ring-white/10">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-200/90">New engagement</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight">Generate financial statements</h2>
           <p className="mt-3 text-sm text-violet-100/85 max-w-xl">
@@ -231,7 +231,7 @@ export default function StatementsNew() {
                     key={f.value}
                     className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-4 transition-all ${
                       framework === f.value
-                        ? 'border-[#16133a] bg-gradient-to-br from-indigo-50/80 to-white shadow-md ring-1 ring-indigo-100'
+                        ? 'border-brand-indigo-dark bg-gradient-to-br from-indigo-50/80 to-white shadow-md ring-1 ring-indigo-100'
                         : 'border-gray-100 hover:border-gray-200 bg-gray-50/50 hover:bg-white'
                     }`}
                   >
@@ -242,10 +242,10 @@ export default function StatementsNew() {
                         value={f.value}
                         checked={framework === f.value}
                         onChange={() => setFramework(f.value)}
-                        className="mt-1 accent-[#16133a]"
+                        className="mt-1 accent-brand-indigo-dark"
                       />
                       <div>
-                        <span className={`text-sm font-bold ${framework === f.value ? 'text-[#16133a]' : 'text-gray-700'}`}>
+                        <span className={`text-sm font-bold ${framework === f.value ? 'text-brand-indigo-dark' : 'text-gray-700'}`}>
                           {f.label}
                         </span>
                         <p className="text-xs text-gray-500 mt-1 leading-snug">{f.hint}</p>
@@ -335,7 +335,7 @@ export default function StatementsNew() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#e6c33a] to-[#d4af2f] py-3 text-sm font-black text-[#16133a] shadow-lg shadow-amber-900/15 hover:shadow-xl hover:brightness-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl bg-gradient-to-r from-brand-gold to-brand-gold-dark py-3 text-sm font-black text-brand-indigo-dark shadow-lg shadow-amber-900/15 hover:shadow-xl hover:brightness-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Uploading…' : 'Create engagement →'}
               </button>

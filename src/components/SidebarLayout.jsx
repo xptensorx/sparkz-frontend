@@ -14,7 +14,7 @@ function NavIcon({ children, active }) {
     <svg
       className={cn(
         'h-5 w-5 flex-shrink-0',
-        active ? 'text-[#16133a]' : 'text-violet-300/80',
+        active ? 'text-brand-indigo-dark' : 'text-violet-300/80',
       )}
       fill="none"
       viewBox="0 0 24 24"
@@ -60,7 +60,7 @@ export default function SidebarLayout({ children, activePage }) {
   const items = APP_NAV_ITEMS.filter((item) => !item.adminOnly || user?.is_admin);
 
   const quota = user?.monthly_quota ?? 3;
-  const used = user?.analyses_completed_this_month ?? 0;
+  const used = user?.runs_completed_this_month ?? 0;
   const remaining = Math.max(0, quota - used);
 
   const asideWidth = collapsed ? 'w-[4.25rem]' : 'w-56';
@@ -113,7 +113,7 @@ export default function SidebarLayout({ children, activePage }) {
             isSheet ? 'p-2' : collapsed ? 'justify-center p-2' : 'p-2',
           )}
         >
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#e6c33a] to-[#c4a82f] text-xs font-black text-[#16133a] shadow-sm">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-gold to-[#c4a82f] text-xs font-black text-brand-indigo-dark shadow-sm">
             {initials}
           </div>
           {(!collapsed || isSheet) && (
@@ -173,7 +173,7 @@ export default function SidebarLayout({ children, activePage }) {
                 'flex w-full items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
                 isSheet || !collapsed ? 'px-3 py-2.5' : 'justify-center px-0 py-2.5',
                 isActive
-                  ? 'bg-[#e6c33a] font-bold text-[#16133a] shadow-md shadow-amber-900/20'
+                  ? 'bg-brand-gold font-bold text-brand-indigo-dark shadow-md shadow-amber-900/20'
                   : 'text-violet-100/90 hover:bg-white/[0.08] hover:text-white',
               )}
             >
@@ -193,7 +193,7 @@ export default function SidebarLayout({ children, activePage }) {
       <aside
         className={cn(
           asideWidth,
-          'hidden h-full min-h-0 flex-shrink-0 flex-col border-r border-white/[0.06] bg-[#16133a] shadow-[4px_0_24px_-12px_rgba(15,23,42,0.35)] transition-[width] duration-200 ease-out md:flex',
+          'hidden h-full min-h-0 flex-shrink-0 flex-col border-r border-white/[0.06] bg-brand-indigo-dark shadow-[4px_0_24px_-12px_rgba(15,23,42,0.35)] transition-[width] duration-200 ease-out md:flex',
         )}
       >
         <div
@@ -217,7 +217,7 @@ export default function SidebarLayout({ children, activePage }) {
         <SheetContent
           side="left"
           className={cn(
-            'flex w-[min(18rem,calc(100vw-1rem))] max-w-[288px] flex-col border-r border-white/10 bg-[#16133a] p-0 text-white',
+            'flex w-[min(18rem,calc(100vw-1rem))] max-w-[288px] flex-col border-r border-white/10 bg-brand-indigo-dark p-0 text-white',
             '[&>button]:text-white [&>button]:opacity-80 [&>button]:hover:bg-white/10 [&>button]:hover:opacity-100',
           )}
         >
@@ -239,14 +239,14 @@ export default function SidebarLayout({ children, activePage }) {
             <div className="flex min-w-0 items-start gap-2 sm:gap-3">
               <button
                 type="button"
-                className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-gray-200/80 bg-white text-[#16133a] shadow-sm transition-colors hover:bg-gray-50 md:hidden"
+                className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-gray-200/80 bg-white text-brand-indigo-dark shadow-sm transition-colors hover:bg-gray-50 md:hidden"
                 onClick={() => setMobileNavOpen(true)}
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" strokeWidth={2} />
               </button>
               <div className="min-w-0 flex-1 pt-0.5 md:pt-0">
-                <h1 className="text-lg font-black tracking-tight text-[#16133a] sm:text-xl md:text-2xl">{title}</h1>
+                <h1 className="text-lg font-black tracking-tight text-brand-indigo-dark sm:text-xl md:text-2xl">{title}</h1>
                 <p className="mt-0.5 max-w-2xl text-xs text-gray-500 sm:mt-1 sm:text-sm">{subtitle}</p>
               </div>
             </div>

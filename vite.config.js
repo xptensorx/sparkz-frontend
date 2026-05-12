@@ -12,7 +12,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  logLevel: 'error',
   server: {
     proxy: {
       '/api': {

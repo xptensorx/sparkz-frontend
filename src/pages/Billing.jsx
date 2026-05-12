@@ -44,7 +44,7 @@ export default function Billing() {
   const [banner, setBanner] = useState(null);
 
   const quota = user?.monthly_quota ?? FREE_QUOTA_FALLBACK;
-  const used = user?.analyses_completed_this_month ?? 0;
+  const used = user?.runs_completed_this_month ?? 0;
   const remaining = Math.max(0, quota - used);
 
   const subStatus = (user?.subscription_status || '').toLowerCase();
@@ -159,7 +159,7 @@ export default function Billing() {
       <div className="mx-auto max-w-5xl space-y-8 pb-8 sm:space-y-10 sm:pb-12">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#6366f1]">Billing</p>
-          <h1 className="text-2xl font-black tracking-tight text-[#1e1b4b] sm:text-3xl">Plan & usage</h1>
+          <h1 className="text-2xl font-black tracking-tight text-brand-indigo sm:text-3xl">Plan & usage</h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-500 sm:text-base">
             Usage limits follow your subscription. Subscribe with Stripe Checkout; changes sync via webhooks to this app.
           </p>
@@ -200,8 +200,8 @@ export default function Billing() {
         )}
 
         <div className="grid gap-5 md:grid-cols-2 md:gap-6">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#1e1b4b] p-6 text-white shadow-xl shadow-indigo-900/20 ring-1 ring-white/10 sm:rounded-3xl sm:p-8">
-            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#e6c33a]/20 blur-2xl" />
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-indigo via-[#312e81] to-brand-indigo p-6 text-white shadow-xl shadow-indigo-900/20 ring-1 ring-white/10 sm:rounded-3xl sm:p-8">
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-gold/20 blur-2xl" />
             <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-indigo-400/10 blur-3xl" />
             <div className="relative">
               <p className="text-xs font-semibold uppercase tracking-widest text-purple-200/90">Current allowance</p>
@@ -218,7 +218,7 @@ export default function Billing() {
               <p className="mt-1 text-sm text-purple-100/90">analyses you can still complete this calendar month</p>
               <div className="mt-6 h-2 rounded-full bg-white/10 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#e6c33a] transition-all duration-500"
+                  className="h-full rounded-full bg-brand-gold transition-all duration-500"
                   style={{ width: `${quota ? Math.min(100, (used / quota) * 100) : 0}%` }}
                 />
               </div>
@@ -228,7 +228,7 @@ export default function Billing() {
 
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm ring-1 ring-black/[0.03] sm:rounded-3xl sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Stripe</p>
-            <h2 className="mt-2 text-lg font-bold text-[#1e1b4b]">Manage subscription</h2>
+            <h2 className="mt-2 text-lg font-bold text-brand-indigo">Manage subscription</h2>
             <p className="mt-2 text-sm text-gray-500 leading-relaxed">
               Update payment method, cancel, or download invoices in the Stripe Customer Portal.
             </p>
@@ -236,7 +236,7 @@ export default function Billing() {
               type="button"
               onClick={goPortal}
               disabled={busy === 'portal' || !config?.portal_available}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#16133a] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#25216b] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-indigo-dark px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-indigo-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {busy === 'portal' ? 'Opening…' : 'Open billing portal'}
             </button>
@@ -245,7 +245,7 @@ export default function Billing() {
             )}
             <p className="mt-4 text-xs text-gray-400">
               Questions?{' '}
-              <a href="mailto:support@sparkz.ai" className="font-medium text-[#1e1b4b] hover:underline">
+              <a href="mailto:support@sparkz.ai" className="font-medium text-brand-indigo hover:underline">
                 Contact support
               </a>
             </p>
@@ -253,7 +253,7 @@ export default function Billing() {
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-[#1e1b4b] mb-1">Compare plans</h2>
+          <h2 className="text-lg font-bold text-brand-indigo mb-1">Compare plans</h2>
           <p className="text-sm text-gray-500 mb-6">
             Checkout uses your Stripe product prices. Quotas: free {config?.free_quota ?? '—'} · starter{' '}
             {quotaFor('starter') ?? '—'} · pro {quotaFor('pro') ?? '—'} per month when subscribed.
@@ -275,7 +275,7 @@ export default function Billing() {
                   key={plan.name}
                   className={`relative flex flex-col rounded-2xl border p-6 transition-shadow ${
                     plan.highlight
-                      ? 'border-[#e6c33a] bg-gradient-to-b from-amber-50/80 to-white shadow-lg shadow-amber-900/5 ring-2 ring-[#e6c33a]/30'
+                      ? 'border-brand-gold bg-gradient-to-b from-amber-50/80 to-white shadow-lg shadow-amber-900/5 ring-2 ring-brand-gold/30'
                       : 'border-gray-100 bg-white shadow-sm ring-1 ring-black/[0.03]'
                   } ${isCurrentPlan ? 'ring-2 ring-emerald-500/40 border-emerald-200/80' : ''}`}
                 >
@@ -285,18 +285,18 @@ export default function Billing() {
                     </span>
                   )}
                   {plan.highlight && !isCurrentPlan && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#1e1b4b] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#e6c33a]">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-indigo px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-gold">
                       Popular
                     </span>
                   )}
-                  <h3 className="text-lg font-black text-[#1e1b4b]">{plan.name}</h3>
+                  <h3 className="text-lg font-black text-brand-indigo">{plan.name}</h3>
                   <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-[#1e1b4b]">{plan.price}</span>
+                    <span className="text-3xl font-black text-brand-indigo">{plan.price}</span>
                     <span className="text-sm text-gray-500">{plan.period}</span>
                   </div>
                   {!isEnterprise && (
                     <p className="mt-1 text-sm text-gray-600">
-                      <span className="font-semibold text-[#1e1b4b]">
+                      <span className="font-semibold text-brand-indigo">
                         {plan.id === 'starter' ? (quotaFor('starter') ?? '—') : (quotaFor('pro') ?? '—')}
                       </span>{' '}
                       analyses / month (when active)
@@ -313,7 +313,7 @@ export default function Billing() {
                   {isEnterprise ? (
                     <a
                       href="mailto:support@sparkz.ai?subject=Sparkz%20Enterprise"
-                      className="mt-6 block w-full rounded-xl border-2 border-gray-200 py-2.5 text-center text-sm font-bold text-[#1e1b4b] hover:border-[#e6c33a] transition-colors"
+                      className="mt-6 block w-full rounded-xl border-2 border-gray-200 py-2.5 text-center text-sm font-bold text-brand-indigo hover:border-brand-gold transition-colors"
                     >
                       Contact sales
                     </a>
@@ -340,8 +340,8 @@ export default function Billing() {
                       onClick={() => goCheckout(plan.id)}
                       className={`mt-6 w-full rounded-xl py-2.5 text-sm font-bold transition-colors ${
                         plan.highlight
-                          ? 'bg-[#e6c33a] text-[#1e1b4b] hover:brightness-95 disabled:opacity-40'
-                          : 'bg-[#16133a] text-white hover:bg-[#25216b] disabled:opacity-40'
+                          ? 'bg-brand-gold text-brand-indigo hover:brightness-95 disabled:opacity-40'
+                          : 'bg-brand-indigo-dark text-white hover:bg-brand-indigo-hover disabled:opacity-40'
                       } disabled:cursor-not-allowed`}
                     >
                       {busy === plan.id
@@ -360,7 +360,7 @@ export default function Billing() {
         </div>
 
         <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-6 py-5 text-center text-sm text-gray-500">
-          <Link to="/dashboard" className="font-semibold text-[#1e1b4b] hover:underline">
+          <Link to="/dashboard" className="font-semibold text-brand-indigo hover:underline">
             ← Back to dashboard
           </Link>
         </div>

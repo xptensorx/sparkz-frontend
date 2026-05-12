@@ -47,7 +47,7 @@ export function SourceAttributionPanel({ block }) {
         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
           Source attribution
         </p>
-        <p className="mt-0.5 truncate text-sm font-bold text-[#1e1b4b]" title={block.title}>
+        <p className="mt-0.5 truncate text-sm font-bold text-brand-indigo" title={block.title}>
           {block.title || '(untitled)'}
         </p>
       </header>

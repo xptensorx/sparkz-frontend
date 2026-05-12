@@ -60,7 +60,7 @@ export function BlockListSidebar({ blocks, selectedBlockId, onSelect }) {
                 className={cn(
                   'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors',
                   isActive
-                    ? 'bg-[#16133a] text-white'
+                    ? 'bg-brand-indigo-dark text-white'
                     : 'text-gray-700 hover:bg-gray-50',
                 )}
               >

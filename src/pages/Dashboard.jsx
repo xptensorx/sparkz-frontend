@@ -27,7 +27,7 @@ export default function Dashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const first = user?.email?.split('@')[0] || 'there';
 
-  const used = user?.analyses_completed_this_month ?? 0;
+  const used = user?.runs_completed_this_month ?? 0;
   const quota = user?.monthly_quota ?? 3;
   const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
 
@@ -61,7 +61,7 @@ export default function Dashboard() {
     <SidebarLayout activePage="Dashboard">
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-black tracking-tight text-[#1e1b4b] sm:text-3xl">
+          <h1 className="text-2xl font-black tracking-tight text-brand-indigo sm:text-3xl">
             {greeting}, {first}
           </h1>
           <p className="mt-1 text-sm text-gray-400 sm:text-base">Your disclosure checklist analyses and usage.</p>
@@ -70,7 +70,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => navigate('/analysis')}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1e1b4b] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#2d2a6e] sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-indigo px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#2d2a6e] sm:w-auto"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
             New analysis
@@ -79,7 +79,7 @@ export default function Dashboard() {
       </div>
 
       {runs.length === 0 && !loading && (
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl bg-[#1e1b4b] p-5 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl bg-brand-indigo p-5 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="text-white font-bold text-lg mb-1">Welcome to Sparkz</p>
             <p className="text-purple-200 text-sm">Upload a financial statement PDF to generate your first disclosure checklist.</p>
@@ -87,7 +87,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => navigate('/analysis')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#e6c33a] text-[#1e1b4b] font-bold text-sm rounded-xl hover:bg-[#d4b034] transition-colors flex-shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-gold text-brand-indigo font-bold text-sm rounded-xl hover:bg-[#d4b034] transition-colors flex-shrink-0"
           >
             Start an analysis
           </button>
@@ -98,27 +98,27 @@ export default function Dashboard() {
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Saved analyses</p>
-            <div className="w-9 h-9 bg-[#1e1b4b]/10 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-[#1e1b4b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
+            <div className="w-9 h-9 bg-brand-indigo/10 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-brand-indigo" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
             </div>
           </div>
-          <p className="text-4xl font-black text-[#1e1b4b]">{loading ? '…' : runs.length}</p>
+          <p className="text-4xl font-black text-brand-indigo">{loading ? '…' : runs.length}</p>
         </div>
 
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Quota this month</p>
             <div className="w-9 h-9 bg-yellow-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-[#e6c33a]" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
+              <svg className="w-5 h-5 text-brand-gold" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
             </div>
           </div>
-          <p className="text-4xl font-black text-[#1e1b4b]">
+          <p className="text-4xl font-black text-brand-indigo">
             {quota - used}
             <span className="text-xl text-gray-400 font-medium"> / {quota}</span>
           </p>
           <div className="mt-3">
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-[#e6c33a] rounded-full transition-all" style={{ width: `${pct}%` }} />
+              <div className="h-full bg-brand-gold rounded-full transition-all" style={{ width: `${pct}%` }} />
             </div>
             <p className="text-xs text-gray-400 mt-2">{used} completed this month</p>
           </div>
@@ -169,7 +169,7 @@ export default function Dashboard() {
                           ? 'text-green-700'
                           : r.status === 'error'
                             ? 'text-red-600'
-                            : 'text-[#1e1b4b]'
+                            : 'text-brand-indigo'
                       }
                     >
                       {statusLabel(r.status)}
@@ -179,7 +179,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigate(`/analysis/${r.run_id}`)}
-                      className="text-sm font-semibold text-[#1e1b4b] hover:underline"
+                      className="text-sm font-semibold text-brand-indigo hover:underline"
                     >
                       Open
                     </button>

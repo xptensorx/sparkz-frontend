@@ -18,7 +18,7 @@ export default function AnalysisSummary({ result }) {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-lg font-black text-[#1e1b4b]">{filename}</h2>
+          <h2 className="text-lg font-black text-brand-indigo">{filename}</h2>
           <div className="flex items-center gap-4 mt-1 text-xs text-gray-400 font-medium">
             <span>{standardLabel}</span>
             {metadata?.pages && <><span>·</span><span>{metadata.pages} pages</span></>}

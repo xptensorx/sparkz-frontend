@@ -51,12 +51,12 @@ export default function Auth() {
 
   return (
     <div className="flex min-h-[100dvh] bg-[#f8f8fb]">
-      <div className="hidden lg:flex w-[420px] flex-shrink-0 bg-[#1e1b4b] flex-col justify-between p-12">
+      <div className="hidden lg:flex w-[420px] flex-shrink-0 bg-brand-indigo flex-col justify-between p-12">
         <SparkzLogo variant="light" />
         <div>
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 bg-white/10 text-purple-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-              <span className="w-1.5 h-1.5 bg-[#e6c33a] rounded-full animate-pulse" />
+              <span className="w-1.5 h-1.5 bg-brand-gold rounded-full animate-pulse" />
               Trusted by 500+ accounting firms
             </div>
             <h2 className="text-3xl font-black text-white leading-tight mb-4">
@@ -82,7 +82,7 @@ export default function Auth() {
                 key={t.val}
                 type="button"
                 onClick={() => setTab(t.val)}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${tab === t.val ? 'bg-white text-[#1e1b4b] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${tab === t.val ? 'bg-white text-brand-indigo shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 {t.label}
               </button>
@@ -91,12 +91,12 @@ export default function Auth() {
 
           {tab === 'signup' ? (
             <>
-              <h1 className="text-2xl font-black text-[#1e1b4b] mb-1">Create your account</h1>
+              <h1 className="text-2xl font-black text-brand-indigo mb-1">Create your account</h1>
               <p className="text-sm text-gray-500 mb-6">Start automating your disclosure checklists today.</p>
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-black text-[#1e1b4b] mb-1">Welcome back</h1>
+              <h1 className="text-2xl font-black text-brand-indigo mb-1">Welcome back</h1>
               <p className="text-sm text-gray-500 mb-6">Sign in to your Sparkz workspace.</p>
             </>
           )}
@@ -117,7 +117,7 @@ export default function Auth() {
                     onChange={e => set('firstName', e.target.value)}
                     placeholder="Alex"
                     required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1e1b4b]/20 focus:border-[#1e1b4b] transition-all"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo/20 focus:border-brand-indigo transition-all"
                   />
                 </div>
                 <div>
@@ -127,7 +127,7 @@ export default function Auth() {
                     onChange={e => set('lastName', e.target.value)}
                     placeholder="Rivera"
                     required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1e1b4b]/20 focus:border-[#1e1b4b] transition-all"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo/20 focus:border-brand-indigo transition-all"
                   />
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function Auth() {
                 placeholder="alex@yourfirm.com"
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1e1b4b]/20 focus:border-[#1e1b4b] transition-all"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo/20 focus:border-brand-indigo transition-all"
               />
             </div>
 
@@ -159,7 +159,7 @@ export default function Auth() {
                   placeholder={tab === 'signup' ? 'Create a strong password' : 'Enter your password'}
                   required
                   autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1e1b4b]/20 focus:border-[#1e1b4b] pr-11 transition-all"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-indigo/20 focus:border-brand-indigo pr-11 transition-all"
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -173,7 +173,7 @@ export default function Auth() {
                 <div className="mt-3 space-y-2">
                   <div className="flex gap-1.5">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= pwStrength ? pwStrength === 1 ? 'bg-red-400' : pwStrength === 2 ? 'bg-[#e6c33a]' : 'bg-green-500' : 'bg-gray-200'}`} />
+                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= pwStrength ? pwStrength === 1 ? 'bg-red-400' : pwStrength === 2 ? 'bg-brand-gold' : 'bg-green-500' : 'bg-gray-200'}`} />
                     ))}
                   </div>
                   <div className="space-y-1">
@@ -193,7 +193,7 @@ export default function Auth() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#e6c33a] text-[#1e1b4b] font-bold rounded-xl hover:bg-[#d4b034] transition-colors disabled:opacity-70 text-sm mt-2"
+              className="w-full py-3 bg-brand-gold text-brand-indigo font-bold rounded-xl hover:bg-[#d4b034] transition-colors disabled:opacity-70 text-sm mt-2"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
